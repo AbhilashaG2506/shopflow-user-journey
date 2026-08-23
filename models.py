@@ -71,8 +71,6 @@ class Event(db.Model):
 
     __tablename__ = "events"
 
-    # IMPORTANT:
-    # SQLite requires INTEGER PRIMARY KEY for automatic IDs.
     id = db.Column(
         db.Integer,
         primary_key=True,

@@ -1,25 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>ShopFlow Analytics Dashboard</title>
 
 <style>
-:root{
-    --bg:#06111f;
-    --panel:#0b1b2e;
-    --panel2:#0e2238;
-    --line:#183451;
-    --text:#f5f9ff;
-    --muted:#8fa6bf;
-    --blue:#1769ff;
-    --cyan:#18d6e8;
-    --green:#22c55e;
-    --amber:#f59e0b;
-    --red:#ef4444;
-    --purple:#8b5cf6;
-}
+
+/* =========================================================
+   GLOBAL
+========================================================= */
 
 *{
     box-sizing:border-box;
@@ -27,2553 +20,444 @@
     padding:0;
 }
 
+html{
+    scroll-behavior:smooth;
+}
+
 body{
-    font-family:Inter,Segoe UI,Arial,sans-serif;
-    background:
-        radial-gradient(circle at 80% 0%,#0c2b4c 0,transparent 28%),
-        var(--bg);
-    color:var(--text);
-    min-height:100vh;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#050b16;
+    color:#e5edf7;
 }
 
-.app{
-    display:flex;
-    min-height:100vh;
-}
 
-/* ================= SIDEBAR ================= */
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
 .sidebar{
-    width:230px;
     position:fixed;
-    inset:0 auto 0 0;
-    background:#04101d;
-    border-right:1px solid #102943;
-    padding:20px 13px;
-    z-index:5;
-}
-
-.brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:4px 10px 25px;
-    font-size:19px;
-    font-weight:800;
+    left:0;
+    top:0;
+    bottom:0;
+    width:245px;
+    background:#07111f;
+    border-right:1px solid #17263a;
+    padding:28px 18px;
+    z-index:100;
 }
 
 .logo{
-    width:30px;
-    height:30px;
-    border-radius:8px;
-    display:grid;
-    place-items:center;
-    background:linear-gradient(135deg,#1769ff,#18d6e8);
+    font-size:21px;
+    font-weight:700;
+    margin-bottom:7px;
 }
 
-.nav{
-    display:grid;
-    gap:5px;
+.logo span{
+    color:#22d3ee;
+}
+
+.subtitle{
+    font-size:11px;
+    color:#71839b;
+    margin-bottom:35px;
+}
+
+.nav-title{
+    font-size:10px;
+    color:#64748b;
+    letter-spacing:1.5px;
+    margin:20px 10px 10px;
 }
 
 .nav a{
-    color:#9bb0c8;
-    text-decoration:none;
-    padding:11px;
-    border-radius:9px;
-    font-size:13px;
-    display:flex;
-    gap:11px;
-    cursor:pointer;
-}
-
-.nav a:hover,
-.nav a.active{
-    background:#1769ff;
-    color:white;
-    box-shadow:0 8px 22px #1769ff33;
-}
-
-.ai{
-    position:absolute;
-    left:13px;
-    right:13px;
-    bottom:18px;
-    border:1px solid #1a3958;
-    border-radius:12px;
-    padding:14px;
-    background:#0b1c30;
-}
-
-.ai b{
-    font-size:13px;
-}
-
-.ai p{
-    color:var(--muted);
-    font-size:11px;
-    line-height:1.45;
-    margin:8px 0 12px;
-}
-
-.ai button{
-    width:100%;
-    border:0;
-    border-radius:8px;
-    padding:9px;
-    color:white;
-    font-weight:700;
-    background:linear-gradient(90deg,#1769ff,#8b5cf6);
-    cursor:pointer;
-}
-
-/* ================= MAIN ================= */
-
-.main{
-    margin-left:230px;
-    width:calc(100% - 230px);
-}
-
-.top{
-    height:68px;
-    border-bottom:1px solid #102943;
-    background:#04101df2;
     display:flex;
     align-items:center;
-    justify-content:flex-end;
-    gap:20px;
-    padding:0 28px;
-    position:sticky;
-    top:0;
-    z-index:4;
-}
-
-.top small{
-    color:#b9c9dc;
-}
-
-.avatar{
-    width:33px;
-    height:33px;
-    border-radius:50%;
-    display:grid;
-    place-items:center;
-    background:#cbd5e1;
-    color:#07111f;
-    font-weight:800;
-}
-
-.content{
-    max-width:1400px;
-    margin:auto;
-    padding:27px;
-}
-
-.head{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    margin-bottom:20px;
-}
-
-h1{
-    font-size:26px;
-    letter-spacing:-.7px;
-}
-
-.sub{
-    color:var(--muted);
-    font-size:12px;
-    margin-top:5px;
-}
-
-.live{
-    color:#cbd9e8;
-    font-size:11px;
-    margin-left:8px;
-}
-
-.dot{
-    display:inline-block;
-    width:7px;
-    height:7px;
-    border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 10px #22c55e;
-    margin-right:5px;
-}
-
-.controls{
-    display:flex;
-    gap:8px;
-}
-
-.controls button{
-    padding:10px 13px;
+    gap:12px;
+    text-decoration:none;
+    color:#91a4bb;
+    padding:12px 13px;
     border-radius:8px;
-    border:1px solid var(--line);
-    background:#0a1a2d;
-    color:#dbe9f8;
-    cursor:pointer;
-    font-size:11px;
+    margin-bottom:5px;
+    font-size:13px;
+    transition:.2s;
 }
 
-.controls .refresh{
-    background:#1769ff;
-    border-color:#2474ff;
+.nav a:hover{
+    background:#0e1d31;
+    color:#e5edf7;
+}
+
+.nav a.active{
+    background:#0d2a48;
+    color:#38bdf8;
+}
+
+.nav-icon{
+    width:20px;
+    text-align:center;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.main{
+    margin-left:245px;
+    min-height:100vh;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header{
+    height:75px;
+    padding:0 35px;
+    background:#07111f;
+    border-bottom:1px solid #17263a;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.header-title{
+    font-size:20px;
     font-weight:700;
 }
 
-/* ================= VIEW SYSTEM ================= */
-
-.view{
-    display:none;
+.header-subtitle{
+    font-size:12px;
+    color:#71839b;
+    margin-top:4px;
 }
 
-.view.active{
-    display:block;
+.status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:#9fb1c7;
 }
 
-/*
-    Overview shows ALL modules.
-    Other menu items show only their own module.
-*/
-
-.module{
-    display:block;
+.status-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 8px #22c55e;
 }
 
-/* ================= CARDS ================= */
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.content{
+    padding:30px 35px 60px;
+}
+
+.section{
+    margin-bottom:35px;
+}
+
+.section-label{
+    font-size:11px;
+    color:#64748b;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-bottom:12px;
+}
+
+
+/* =========================================================
+   OVERVIEW CARDS
+========================================================= */
 
 .cards{
     display:grid;
     grid-template-columns:repeat(4,1fr);
-    gap:12px;
-    margin-bottom:14px;
-}
-
-.card,
-.panel{
-    background:linear-gradient(145deg,#0e2238,#08192b);
-    border:1px solid var(--line);
-    border-radius:12px;
-    box-shadow:0 15px 40px #0004;
+    gap:16px;
 }
 
 .card{
-    padding:17px;
-    min-height:140px;
+    background:#0a1524;
+    border:1px solid #17263a;
+    border-radius:12px;
+    padding:20px;
 }
 
-.ct{
-    display:flex;
-    justify-content:space-between;
-    color:#c0d0e2;
-    font-size:11px;
+.card-title{
+    color:#71839b;
+    font-size:12px;
+    margin-bottom:13px;
 }
 
-.icon{
-    width:34px;
-    height:34px;
-    border-radius:9px;
-    background:#1769ff22;
-    color:#69b2ff;
-    display:grid;
-    place-items:center;
-    font-size:16px;
-}
-
-.value{
+.card-value{
     font-size:29px;
-    font-weight:800;
-    margin-top:11px;
-}
-
-.foot{
-    color:var(--muted);
-    font-size:10px;
-    margin-top:7px;
-}
-
-.up{
-    color:var(--green);
     font-weight:700;
 }
 
-/* ================= SECTION TITLE ================= */
-
-.section-header{
-    margin:22px 0 12px;
+.card-blue{
+    color:#38bdf8;
 }
 
-.section-header h2{
-    font-size:18px;
+.card-cyan{
+    color:#22d3ee;
 }
 
-.section-header p{
-    color:var(--muted);
-    font-size:11px;
-    margin-top:4px;
+.card-green{
+    color:#22c55e;
 }
 
-/* ================= GRID ================= */
 
-.grid{
-    display:grid;
-    grid-template-columns:1.35fr .95fr;
-    gap:12px;
-    margin-bottom:12px;
+/* =========================================================
+   PANELS
+========================================================= */
+
+.panel{
+    background:#0a1524;
+    border:1px solid #17263a;
+    border-radius:12px;
+    overflow:hidden;
 }
 
-.lower{
-    display:grid;
-    grid-template-columns:1.15fr .85fr;
-    gap:12px;
+.panel-header{
+    padding:20px 22px;
+    border-bottom:1px solid #17263a;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
 .panel-title{
-    font-size:14px;
-    font-weight:750;
-}
-
-.ph{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:17px 17px 12px;
+    font-size:17px;
+    font-weight:700;
 }
 
 .note{
-    color:#8097ae;
-    font-size:10px;
-}
-
-/* ================= FUNNEL ================= */
-
-.funnel{
-    padding:2px 17px 17px;
-}
-
-.frow{
-    display:grid;
-    grid-template-columns:105px 1fr 48px;
-    gap:9px;
-    align-items:center;
-    margin:10px 0;
-}
-
-.stage{
+    color:#71839b;
     font-size:11px;
-    color:#d4e0ed;
+    margin-top:5px;
 }
 
-.barbg{
-    height:28px;
-    background:#12283e;
-    border-radius:5px;
-    overflow:hidden;
+.panel-body{
+    padding:22px;
 }
 
-.bar{
-    height:100%;
-    min-width:3px;
-    border-radius:5px;
-    padding-left:9px;
+
+/* =========================================================
+   FUNNEL
+========================================================= */
+
+.funnel-stage{
+    margin-bottom:22px;
+}
+
+.funnel-stage:last-child{
+    margin-bottom:0;
+}
+
+.funnel-row{
     display:flex;
     align-items:center;
-    color:white;
-    font-size:10px;
-    font-weight:700;
-    background:linear-gradient(90deg,#1769ff,#348dff);
+    gap:15px;
 }
 
-.frow:nth-child(3) .bar{
-    background:linear-gradient(90deg,#315de8,#8054ee);
+.funnel-label{
+    width:125px;
+    font-size:13px;
+    font-weight:600;
 }
 
-.frow:nth-child(4) .bar{
-    background:linear-gradient(90deg,#8b4eea,#c64ce2);
-}
-
-.frow:nth-child(5) .bar{
-    background:linear-gradient(90deg,#d54eaf,#ef5f8f);
-}
-
-.frow:nth-child(6) .bar{
-    background:linear-gradient(90deg,#f27a28,#f5a20d);
-}
-
-.frow:nth-child(7) .bar{
-    background:linear-gradient(90deg,#1bbf67,#22d879);
-}
-
-.pct{
-    text-align:right;
-    font-size:10px;
-    font-weight:700;
-}
-
-.summary{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    border:1px solid #17314b;
-    border-radius:8px;
+.funnel-bar-container{
+    flex:1;
+    height:32px;
+    background:#111d2d;
+    border-radius:7px;
     overflow:hidden;
-    margin-top:12px;
 }
 
-.sum{
-    padding:10px;
-    border-right:1px solid #17314b;
-}
-
-.sum:last-child{
-    border:0;
-}
-
-.sum span{
-    display:block;
-    color:#8ea5bc;
-    font-size:9px;
-}
-
-.sum strong{
-    display:block;
-    margin-top:5px;
-    font-size:15px;
-}
-
-/* ================= PREDICTION ================= */
-
-.pred{
-    padding:5px 17px 17px;
-}
-
-.predtop{
-    display:grid;
-    grid-template-columns:145px 1fr;
-    gap:17px;
-    align-items:center;
-}
-
-.gauge{
-    width:135px;
-    height:135px;
-    border-radius:50%;
-    display:grid;
-    place-items:center;
-    background:conic-gradient(
-        #1769ff var(--angle),
-        #152c44 var(--angle)
+.funnel-bar{
+    height:100%;
+    background:linear-gradient(
+        90deg,
+        #2563eb,
+        #06b6d4
     );
-    position:relative;
-}
-
-.gauge:before{
-    content:"";
-    position:absolute;
-    width:105px;
-    height:105px;
-    border-radius:50%;
-    background:#091a2c;
-}
-
-.gtext{
-    position:relative;
-    text-align:center;
-}
-
-.gtext b{
-    font-size:23px;
-}
-
-.gtext small{
-    display:block;
-    color:var(--muted);
-    font-size:9px;
-    margin-top:2px;
-}
-
-.metric{
-    border:1px solid #183551;
-    border-radius:8px;
-    padding:9px;
-    margin:8px 0;
-}
-
-.metric small{
-    display:block;
-    color:#8da4ba;
-    font-size:9px;
-}
-
-.metric b{
-    display:block;
-    margin-top:4px;
-    font-size:14px;
-}
-
-.high{
-    color:var(--red);
-}
-
-.medium{
-    color:var(--amber);
-}
-
-.low{
-    color:var(--green);
-}
-
-.recommend{
-    border-top:1px solid #17314b;
-    margin-top:12px;
-    padding-top:10px;
-    color:#c8d6e5;
-    font-size:10px;
-    line-height:1.5;
-}
-
-.recommend small{
-    color:#8098b0;
-    display:block;
-    margin-top:5px;
-}
-
-/* ================= TABLE ================= */
-
-.table{
-    overflow:auto;
-}
-
-.table table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-.table th,
-.table td{
-    padding:10px 12px;
-    border-top:1px solid #112b44;
-    text-align:left;
-    white-space:nowrap;
-    font-size:10px;
-}
-
-.table th{
-    color:#718ba5;
-    font-size:9px;
-}
-
-.table td{
-    color:#c8d6e5;
-}
-
-.pill{
-    padding:4px 7px;
-    border-radius:15px;
-    font-size:8px;
-    font-weight:800;
-}
-
-.pill.high{
-    background:#ef444422;
-}
-
-.pill.medium{
-    background:#f59e0b22;
-}
-
-.pill.low{
-    background:#22c55e22;
-}
-
-/* ================= REASONS ================= */
-
-.reasons{
-    padding:3px 17px 17px;
-}
-
-.reason{
-    margin:12px 0;
-}
-
-.rhead{
+    border-radius:7px;
     display:flex;
-    justify-content:space-between;
-    font-size:10px;
-    color:#cbd8e6;
-    margin-bottom:6px;
+    align-items:center;
+    padding-left:10px;
+    color:white;
+    font-size:12px;
+    font-weight:600;
+    min-width:35px;
+    transition:width .5s;
 }
 
-.rbar{
-    height:6px;
-    background:#142b42;
+.funnel-number{
+    width:70px;
+    text-align:right;
+    font-size:13px;
+    font-weight:600;
+}
+
+.funnel-details{
+    margin-left:140px;
+    margin-top:7px;
+    display:flex;
+    gap:25px;
+    color:#64748b;
+    font-size:11px;
+}
+
+
+/* =========================================================
+   ML PREDICTION
+========================================================= */
+
+.prediction-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.prediction-card{
+    background:#07111f;
+    border:1px solid #17263a;
     border-radius:10px;
-    overflow:hidden;
-}
-
-.rfill{
-    height:100%;
-    background:#1769ff;
-    border-radius:10px;
-}
-
-.reason:nth-child(2) .rfill{
-    background:#8b5cf6;
-}
-
-.reason:nth-child(3) .rfill{
-    background:#f59e0b;
-}
-
-.reason:nth-child(4) .rfill{
-    background:#22c55e;
-}
-
-.reason:nth-child(5) .rfill{
-    background:#18d6e8;
-}
-
-/* ================= MODEL ================= */
-
-.model-status{
     padding:18px;
 }
 
-.status-box{
-    border:1px solid #22c55e44;
-    background:#22c55e12;
-    color:#22c55e;
-    border-radius:9px;
-    padding:14px;
-    font-size:12px;
+.prediction-label{
+    color:#71839b;
+    font-size:11px;
+    margin-bottom:8px;
+}
+
+.prediction-value{
+    font-size:25px;
     font-weight:700;
-    margin-bottom:15px;
+}
+
+.purchase-value{
+    color:#22c55e;
+}
+
+.dropoff-value{
+    color:#ef4444;
+}
+
+.risk-low{
+    color:#22c55e;
+}
+
+.risk-medium{
+    color:#f59e0b;
+}
+
+.risk-high{
+    color:#ef4444;
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.progress{
+    height:8px;
+    background:#182536;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.progress-bar{
+    height:100%;
+    border-radius:10px;
+    transition:width .5s;
+}
+
+.progress-green{
+    background:#22c55e;
+}
+
+.progress-red{
+    background:#ef4444;
+}
+
+
+/* =========================================================
+   RECOMMENDATION
+========================================================= */
+
+.recommendation{
+    margin-top:18px;
+    padding:17px;
+    background:#07111f;
+    border:1px solid #17263a;
+    border-radius:9px;
+}
+
+.recommendation-title{
+    font-size:11px;
+    color:#22d3ee;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:8px;
+}
+
+.recommendation-text{
+    color:#b7c5d6;
+    font-size:13px;
+    line-height:1.6;
+}
+
+
+/* =========================================================
+   MODEL STATUS
+========================================================= */
+
+.model-status{
+    padding:20px 22px;
+}
+
+.model-loaded{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    color:#22c55e;
+    font-size:13px;
+    margin-bottom:18px;
 }
 
 .model-grid{
     display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:12px;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
 }
 
 .model-card{
-    border:1px solid #183551;
-    background:#091b2d;
-    border-radius:9px;
+    background:#07111f;
+    border:1px solid #17263a;
     padding:16px;
+    border-radius:9px;
 }
 
 .model-card small{
-    color:#8098b0;
     display:block;
-    font-size:9px;
+    color:#64748b;
+    font-size:10px;
+    margin-bottom:7px;
 }
 
 .model-card strong{
-    display:block;
-    margin-top:7px;
-    font-size:15px;
-}
-
-/* ================= ALERTS ================= */
-
-.alerts{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    margin-top:12px;
-    border:1px solid var(--line);
-    border-radius:10px;
-    overflow:hidden;
-    background:#091b2d;
-}
-
-.alert{
-    padding:12px 15px;
-    border-right:1px solid #17314b;
-    font-size:10px;
-    color:#b8c9da;
-}
-
-.alert:last-child{
-    border:0;
-}
-
-.alert b{
-    display:block;
-    color:#e6eff9;
-    margin-bottom:3px;
-}
-
-.empty{
-    text-align:center;
-    color:var(--muted);
-    padding:25px;
-    font-size:11px;
-}
-
-/* ================= MOBILE ================= */
-
-@media(max-width:1050px){
-
-    .cards{
-        grid-template-columns:repeat(2,1fr);
-    }
-
-    .grid,
-    .lower{
-        grid-template-columns:1fr;
-    }
-}
-
-@media(max-width:760px){
-
-    .sidebar{
-        width:65px;
-    }
-
-    .brand span,
-    .nav a span:last-child,
-    .ai{
-        display:none;
-    }
-
-    .brand{
-        justify-content:center;
-        padding-left:0;
-        padding-right:0;
-    }
-
-    .nav a{
-        justify-content:center;
-    }
-
-    .main{
-        margin-left:65px;
-        width:calc(100% - 65px);
-    }
-
-    .content{
-        padding:18px;
-    }
-
-    .head{
-        flex-direction:column;
-        gap:13px;
-    }
-
-    .top{
-        padding:0 15px;
-    }
-
-    .top small{
-        display:none;
-    }
-}
-
-@media(max-width:520px){
-
-    .cards{
-        grid-template-columns:1fr;
-    }
-
-    .controls{
-        width:100%;
-    }
-
-    .controls button{
-        flex:1;
-    }
-
-    .predtop{
-        grid-template-columns:1fr;
-        justify-items:center;
-    }
-
-    .summary{
-        grid-template-columns:repeat(2,1fr);
-    }
-
-    .sum:nth-child(2){
-        border:0;
-    }
-
-    .sum:nth-child(-n+2){
-        border-bottom:1px solid #17314b;
-    }
-
-    .alerts{
-        grid-template-columns:1fr;
-    }
-
-    .alert{
-        border-right:0;
-        border-bottom:1px solid #17314b;
-    }
-
-    .model-grid{
-        grid-template-columns:1fr;
-    }
-}
-</style>
-</head>
-
-<body>
-
-<div class="app">
-
-<!-- =========================================================
-     SIDEBAR
-========================================================= -->
-
-<aside class="sidebar">
-
-    <div class="brand">
-        <div class="logo">▼</div>
-        <span>ShopFlow</span>
-    </div>
-
-    <nav class="nav">
-
-        <a href="#overview"
-           data-view="overview"
-           class="active">
-            ⌂
-            <span>Overview</span>
-        </a>
-
-        <a href="#liveJourney"
-           data-view="liveJourney">
-            ◉
-            <span>Live User Journey</span>
-        </a>
-
-        <a href="#funnelAnalysis"
-           data-view="funnelAnalysis">
-            ▽
-            <span>Funnel Analysis</span>
-        </a>
-
-        <a href="#dropoffPrediction"
-           data-view="dropoffPrediction">
-            ◔
-            <span>Drop-off Prediction</span>
-        </a>
-
-        <a href="#userInsights"
-           data-view="userInsights">
-            ♙
-            <span>User Insights</span>
-        </a>
-
-        <a href="#modelPerformance"
-           data-view="modelPerformance">
-            ⌁
-            <span>Model Performance</span>
-        </a>
-
-    </nav>
-
-    <div class="ai">
-
-        <b>AI / ML System</b>
-
-        <p>
-            Real-time user journey analysis,
-            drop-off prediction and recommendations.
-        </p>
-
-        <button onclick="showView('dropoffPrediction')">
-            ✦ View Prediction
-        </button>
-
-    </div>
-
-</aside>
-
-
-<!-- =========================================================
-     MAIN
-========================================================= -->
-
-<main class="main">
-
-<header class="top">
-
-    <small id="clock"></small>
-
-    <span>⌕</span>
-    <span>⛶</span>
-
-    <div class="avatar">A</div>
-
-    <small>
-        Admin<br>
-        Administrator
-    </small>
-
-</header>
-
-
-<section class="content">
-
-
-<!-- =========================================================
-     HEADER
-========================================================= -->
-
-<div class="head">
-
-    <div>
-
-        <h1>
-            Real-Time Analytics Dashboard
-
-            <span class="live">
-                <i class="dot"></i>
-                Live
-            </span>
-        </h1>
-
-        <div class="sub">
-            Monitor user journey, behaviour and ML-powered
-            drop-off predictions in real-time
-        </div>
-
-    </div>
-
-
-    <div class="controls">
-
-        <button class="refresh" onclick="load()">
-            ↻ Refresh
-        </button>
-
-        <button>
-            Last 30 Minutes ▾
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- =========================================================
-     OVERVIEW VIEW
-     EVERYTHING IS SHOWN HERE
-========================================================= -->
-
-<div id="overviewView" class="view active">
-
-    <!-- KPI CARDS -->
-
-    <div class="cards">
-
-        <div class="card">
-
-            <div class="ct">
-                <span>TOTAL EVENTS</span>
-                <i class="icon">↗</i>
-            </div>
-
-            <div class="value" id="events">—</div>
-
-            <div class="foot">
-                <span class="up">↑ Live</span>
-                All tracked interactions
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="ct">
-                <span>UNIQUE USERS</span>
-                <i class="icon">♟</i>
-            </div>
-
-            <div class="value" id="users">—</div>
-
-            <div class="foot">
-                Distinct visitors
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="ct">
-                <span>PRODUCT VIEWS</span>
-                <i class="icon">◉</i>
-            </div>
-
-            <div class="value" id="views">—</div>
-
-            <div class="foot">
-                Product engagement
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="ct">
-                <span>PURCHASES</span>
-                <i class="icon">🛒</i>
-            </div>
-
-            <div class="value" id="purchases">—</div>
-
-            <div class="foot">
-                <span class="up">↑</span>
-                Completed transactions
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- FUNNEL + PREDICTION -->
-
-    <div class="grid">
-
-        <!-- FUNNEL -->
-
-        <section class="panel module">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    User Journey Funnel
-                </div>
-
-                <div class="live">
-                    <i class="dot"></i>
-                    Live
-                </div>
-
-            </div>
-
-            <div class="funnel" id="overviewFunnel">
-                <div class="empty">
-                    Loading funnel...
-                </div>
-            </div>
-
-        </section>
-
-
-        <!-- PREDICTION -->
-
-        <section class="panel module">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    Drop-off Prediction
-                </div>
-
-                <div class="note">
-                    AI / ML
-                </div>
-
-            </div>
-
-            <div class="pred" id="overviewPrediction">
-
-                <div class="empty">
-                    Loading prediction...
-                </div>
-
-            </div>
-
-        </section>
-
-    </div>
-
-
-    <!-- LIVE ACTIVITY + INSIGHTS -->
-
-    <div class="lower">
-
-        <section class="panel module">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    Live User Activity
-                </div>
-
-                <div class="live">
-                    <i class="dot"></i>
-                    Live
-                </div>
-
-            </div>
-
-            <div class="table">
-
-                <table>
-
-                    <thead>
-
-                    <tr>
-                        <th>USER ID</th>
-                        <th>EVENT</th>
-                        <th>DEVICE</th>
-                        <th>LOCATION</th>
-                        <th>TRAFFIC SOURCE</th>
-                    </tr>
-
-                    </thead>
-
-                    <tbody id="overviewActivity">
-
-                    <tr>
-                        <td colspan="5" class="empty">
-                            Loading...
-                        </td>
-                    </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </section>
-
-
-        <section class="panel module">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    Top Drop-off Reasons
-                </div>
-
-                <div class="note">
-                    AI Insights
-                </div>
-
-            </div>
-
-            <div class="reasons">
-
-                <div class="reason">
-
-                    <div class="rhead">
-                        <span>High Checkout Abandonment</span>
-                        <b>42.8%</b>
-                    </div>
-
-                    <div class="rbar">
-                        <div class="rfill" style="width:42.8%"></div>
-                    </div>
-
-                </div>
-
-
-                <div class="reason">
-
-                    <div class="rhead">
-                        <span>Long / Complex Journey</span>
-                        <b>21.4%</b>
-                    </div>
-
-                    <div class="rbar">
-                        <div class="rfill" style="width:21.4%"></div>
-                    </div>
-
-                </div>
-
-
-                <div class="reason">
-
-                    <div class="rhead">
-                        <span>Shopping Intent Not Converted</span>
-                        <b>15.6%</b>
-                    </div>
-
-                    <div class="rbar">
-                        <div class="rfill" style="width:15.6%"></div>
-                    </div>
-
-                </div>
-
-
-                <div class="reason">
-
-                    <div class="rhead">
-                        <span>Payment / Checkout Friction</span>
-                        <b>12.7%</b>
-                    </div>
-
-                    <div class="rbar">
-                        <div class="rfill" style="width:12.7%"></div>
-                    </div>
-
-                </div>
-
-
-                <div class="reason">
-
-                    <div class="rhead">
-                        <span>Other Behaviour</span>
-                        <b>7.5%</b>
-                    </div>
-
-                    <div class="rbar">
-                        <div class="rfill" style="width:7.5%"></div>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </div>
-
-
-    <!-- MODEL STATUS -->
-
-    <section class="panel module" style="margin-top:12px">
-
-        <div class="ph">
-
-            <div class="panel-title">
-                Model Performance & Status
-            </div>
-
-            <div class="note">
-                ML System
-            </div>
-
-        </div>
-
-        <div class="model-status">
-
-            <div class="status-box" id="overviewModelStatus">
-                Checking Random Forest ML model...
-            </div>
-
-            <div class="model-grid">
-
-                <div class="model-card">
-
-                    <small>
-                        PREDICTION SOURCE
-                    </small>
-
-                    <strong id="overviewPredictionSource">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        CURRENT USER
-                    </small>
-
-                    <strong id="overviewCurrentUser">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        CURRENT STAGE
-                    </small>
-
-                    <strong id="overviewCurrentStage">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        SESSION DURATION
-                    </small>
-
-                    <strong id="overviewSessionDuration">
-                        —
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-</div>
-
-
-<!-- =========================================================
-     LIVE USER JOURNEY ONLY
-========================================================= -->
-
-<div id="liveJourneyView" class="view">
-
-    <div class="section-header">
-
-        <h2>Live User Journey</h2>
-
-        <p>
-            Real-time customer events received by ShopFlow
-        </p>
-
-    </div>
-
-
-    <section class="panel">
-
-        <div class="ph">
-
-            <div class="panel-title">
-                Live User Activity
-            </div>
-
-            <div class="live">
-                <i class="dot"></i>
-                Live Tracking
-            </div>
-
-        </div>
-
-
-        <div class="table">
-
-            <table>
-
-                <thead>
-
-                <tr>
-                    <th>USER ID</th>
-                    <th>EVENT TYPE</th>
-                    <th>PRODUCT ID</th>
-                    <th>DEVICE</th>
-                    <th>LOCATION</th>
-                    <th>TRAFFIC SOURCE</th>
-                    <th>TIMESTAMP</th>
-                </tr>
-
-                </thead>
-
-                <tbody id="journeyActivity">
-
-                <tr>
-                    <td colspan="7" class="empty">
-                        Loading...
-                    </td>
-                </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
-</div>
-
-
-<!-- =========================================================
-     FUNNEL ANALYSIS ONLY
-========================================================= -->
-
-<div id="funnelAnalysisView" class="view">
-
-    <div class="section-header">
-
-        <h2>Funnel Analysis</h2>
-
-        <p>
-            User movement across the complete conversion journey
-        </p>
-
-    </div>
-
-
-    <section class="panel">
-
-        <div class="ph">
-
-            <div class="panel-title">
-                User Journey Funnel
-            </div>
-
-            <div class="live">
-                <i class="dot"></i>
-                Live
-            </div>
-
-        </div>
-
-
-        <div class="funnel" id="standaloneFunnel">
-
-            <div class="empty">
-                Loading funnel...
-            </div>
-
-        </div>
-
-    </section>
-
-</div>
-
-
-<!-- =========================================================
-     DROP-OFF PREDICTION ONLY
-========================================================= -->
-
-<div id="dropoffPredictionView" class="view">
-
-    <div class="section-header">
-
-        <h2>Drop-off Prediction</h2>
-
-        <p>
-            Random Forest ML-powered user risk prediction
-        </p>
-
-    </div>
-
-
-    <section class="panel">
-
-        <div class="ph">
-
-            <div class="panel-title">
-                Real-Time Drop-off Prediction
-            </div>
-
-            <div class="note">
-                Random Forest ML
-            </div>
-
-        </div>
-
-
-        <div class="pred" id="standalonePrediction">
-
-            <div class="empty">
-                Loading prediction...
-            </div>
-
-        </div>
-
-    </section>
-
-</div>
-
-
-<!-- =========================================================
-     USER INSIGHTS ONLY
-========================================================= -->
-
-<div id="userInsightsView" class="view">
-
-    <div class="section-header">
-
-        <h2>User Insights</h2>
-
-        <p>
-            Behaviour and activity insights from tracked user events
-        </p>
-
-    </div>
-
-
-    <div class="lower">
-
-
-        <!-- ACTIVITY -->
-
-        <section class="panel">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    User Activity
-                </div>
-
-                <div class="live">
-                    <i class="dot"></i>
-                    Live
-                </div>
-
-            </div>
-
-
-            <div class="table">
-
-                <table>
-
-                    <thead>
-
-                    <tr>
-                        <th>USER ID</th>
-                        <th>EVENT</th>
-                        <th>DEVICE</th>
-                        <th>LOCATION</th>
-                        <th>TRAFFIC SOURCE</th>
-                    </tr>
-
-                    </thead>
-
-                    <tbody id="insightsActivity">
-
-                    <tr>
-                        <td colspan="5" class="empty">
-                            Loading...
-                        </td>
-                    </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </section>
-
-
-        <!-- EVENT SUMMARY -->
-
-        <section class="panel">
-
-            <div class="ph">
-
-                <div class="panel-title">
-                    Event Summary
-                </div>
-
-                <div class="note">
-                    Live Data
-                </div>
-
-            </div>
-
-
-            <div class="reasons" id="eventSummary">
-
-                <div class="reason">
-                    <div class="rhead">
-                        <span>Visits</span>
-                        <b id="summaryVisit">0</b>
-                    </div>
-                </div>
-
-                <div class="reason">
-                    <div class="rhead">
-                        <span>Product Views</span>
-                        <b id="summaryProduct">0</b>
-                    </div>
-                </div>
-
-                <div class="reason">
-                    <div class="rhead">
-                        <span>Add to Cart</span>
-                        <b id="summaryCart">0</b>
-                    </div>
-                </div>
-
-                <div class="reason">
-                    <div class="rhead">
-                        <span>Checkout</span>
-                        <b id="summaryCheckout">0</b>
-                    </div>
-                </div>
-
-                <div class="reason">
-                    <div class="rhead">
-                        <span>Purchases</span>
-                        <b id="summaryPurchase">0</b>
-                    </div>
-                </div>
-
-            </div>
-
-        </section>
-
-    </div>
-
-</div>
-
-
-<!-- =========================================================
-     MODEL PERFORMANCE ONLY
-========================================================= -->
-
-<div id="modelPerformanceView" class="view">
-
-    <div class="section-header">
-
-        <h2>Model Performance</h2>
-
-        <p>
-            Current Random Forest ML prediction engine status
-        </p>
-
-    </div>
-
-
-    <section class="panel">
-
-        <div class="model-status">
-
-            <div class="status-box" id="modelStatus">
-                Checking Random Forest ML model...
-            </div>
-
-
-            <div class="model-grid">
-
-                <div class="model-card">
-
-                    <small>
-                        PREDICTION SOURCE
-                    </small>
-
-                    <strong id="modelPredictionSource">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        CURRENT USER
-                    </small>
-
-                    <strong id="modelCurrentUser">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        CURRENT STAGE
-                    </small>
-
-                    <strong id="modelCurrentStage">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="model-card">
-
-                    <small>
-                        SESSION DURATION
-                    </small>
-
-                    <strong id="modelSessionDuration">
-                        —
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <section class="panel" style="margin-top:12px">
-
-        <div class="ph">
-
-            <div class="panel-title">
-                Recent User Events
-            </div>
-
-            <div class="note">
-                Real-time tracking
-            </div>
-
-        </div>
-
-
-        <div class="table">
-
-            <table>
-
-                <thead>
-
-                <tr>
-                    <th>USER ID</th>
-                    <th>EVENT</th>
-                    <th>PRODUCT</th>
-                    <th>DEVICE</th>
-                    <th>LOCATION</th>
-                    <th>TRAFFIC SOURCE</th>
-                    <th>TIME</th>
-                </tr>
-
-                </thead>
-
-                <tbody id="modelEvents">
-
-                <tr>
-                    <td colspan="7" class="empty">
-                        Loading...
-                    </td>
-                </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
-</div>
-
-
-<!-- =========================================================
-     ALERTS
-========================================================= -->
-
-<div class="alerts">
-
-    <div class="alert">
-
-        <b>⚠ System Status</b>
-
-        <span id="alert">
-            Monitoring analytics pipeline...
-        </span>
-
-    </div>
-
-
-    <div class="alert">
-
-        <b>✓ ML Prediction Status</b>
-
-        <span id="model">
-            Checking model...
-        </span>
-
-    </div>
-
-
-    <div class="alert">
-
-        <b>↗ Latest User</b>
-
-        <span id="latest">
-            Waiting for activity...
-        </span>
-
-    </div>
-
-</div>
-
-
-</section>
-
-</main>
-
-</div>
-
-
-<script>
-
-/* =========================================================
-   LABELS
-========================================================= */
-
-const labels = {
-    visit:"Visit",
-    product_view:"Product View",
-    add_to_cart:"Add to Cart",
-    view_cart:"View Cart",
-    checkout:"Checkout",
-    purchase:"Purchase"
-};
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function esc(x){
-
-    return String(x ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;");
-
-}
-
-
-/* =========================================================
-   CLOCK
-========================================================= */
-
-function clock(){
-
-    document.getElementById("clock").textContent =
-        new Date().toLocaleString(
-            "en-IN",
-            {
-                day:"2-digit",
-                month:"short",
-                year:"numeric",
-                hour:"2-digit",
-                minute:"2-digit",
-                second:"2-digit"
-            }
-        );
-
-}
-
-clock();
-
-setInterval(clock,1000);
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-const viewMap = {
-
-    overview:"overviewView",
-
-    liveJourney:"liveJourneyView",
-
-    funnelAnalysis:"funnelAnalysisView",
-
-    dropoffPrediction:"dropoffPredictionView",
-
-    userInsights:"userInsightsView",
-
-    modelPerformance:"modelPerformanceView"
-
-};
-
-
-function showView(view){
-
-    /*
-        Hide every page
-    */
-
-    document
-        .querySelectorAll(".view")
-        .forEach(v => v.classList.remove("active"));
-
-
-    /*
-        Show selected page
-    */
-
-    const selected =
-        document.getElementById(viewMap[view]);
-
-    if(selected){
-        selected.classList.add("active");
-    }
-
-
-    /*
-        Update sidebar active state
-    */
-
-    document
-        .querySelectorAll(".nav a")
-        .forEach(a => {
-
-            a.classList.toggle(
-                "active",
-                a.dataset.view === view
-            );
-
-        });
-
-
-    /*
-        Change URL hash
-    */
-
-    if(history.replaceState){
-
-        history.replaceState(
-            null,
-            "",
-            "#"+view
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SIDEBAR CLICK EVENTS
-========================================================= */
-
-document
-    .querySelectorAll(".nav a[data-view]")
-    .forEach(link => {
-
-        link.addEventListener("click",function(e){
-
-            e.preventDefault();
-
-            showView(this.dataset.view);
-
-        });
-
-    });
-
-
-/* =========================================================
-   LOAD VIEW FROM URL
-========================================================= */
-
-function loadViewFromHash(){
-
-    const hash =
-        window.location.hash.replace("#","");
-
-    if(viewMap[hash]){
-
-        showView(hash);
-
-    }else{
-
-        showView("overview");
-
-    }
-
-}
-
-window.addEventListener(
-    "hashchange",
-    loadViewFromHash
-);
-
-loadViewFromHash();
-
-
-/* =========================================================
-   RISK CLASS
-========================================================= */
-
-function riskClass(x){
-
-    return String(x || "LOW")
-        .toLowerCase();
-
-}
-
-
-/* =========================================================
-   FUNNEL RENDER
-========================================================= */
-
-function renderFunnel(data,targetId){
-
-    const stages = [
-        "visit",
-        "product_view",
-        "add_to_cart",
-        "view_cart",
-        "checkout",
-        "purchase"
-    ];
-
-    const f = data.funnel || {};
-
-    const vals =
-        stages.map(x => Number(f[x] || 0));
-
-    const max =
-        Math.max(...vals,1);
-
-    const total =
-        vals[0];
-
-    const purchase =
-        vals[5];
-
-
-    let html = "";
-
-
-    stages.forEach((s,i)=>{
-
-        const pct =
-            total
-                ? ((vals[i] / total) * 100).toFixed(1)
-                : "0.0";
-
-        const width =
-            vals[i]
-                ? Math.max(
-                    4,
-                    vals[i] / max * 100
-                )
-                : 0;
-
-
-        html += `
-
-        <div class="frow">
-
-            <div class="stage">
-                ${labels[s]}
-            </div>
-
-            <div class="barbg">
-
-                <div
-                    class="bar"
-                    style="width:${width}%"
-                >
-                    ${vals[i]}
-                </div>
-
-            </div>
-
-            <div class="pct">
-                ${pct}%
-            </div>
-
-        </div>
-
-        `;
-
-    });
-
-
-    let biggest = "—";
-    let big = 0;
-
-
-    for(let i=1;i<vals.length;i++){
-
-        if(vals[i-1] > 0){
-
-            const d =
-                ((vals[i-1] - vals[i])
-                / vals[i-1]) * 100;
-
-
-            if(d > big){
-
-                big = d;
-
-                biggest =
-                    labels[stages[i-1]]
-                    +" → "
-                    +labels[stages[i]];
-
-            }
-
-        }
-
-    }
-
-
-    html += `
-
-    <div class="summary">
-
-        <div class="sum">
-
-            <span>
-                Overall Conversion
-            </span>
-
-            <strong>
-                ${
-                    total
-                    ? ((purchase/total)*100).toFixed(2)
-                    : "0.00"
-                }%
-            </strong>
-
-        </div>
-
-
-        <div class="sum">
-
-            <span>
-                Total Users
-            </span>
-
-            <strong>
-                ${total}
-            </strong>
-
-        </div>
-
-
-        <div class="sum">
-
-            <span>
-                Total Purchases
-            </span>
-
-            <strong>
-                ${purchase}
-            </strong>
-
-        </div>
-
-
-        <div class="sum">
-
-            <span>
-                Biggest Drop-off
-            </span>
-
-            <strong>
-                ${biggest}
-                ${big ? " "+big.toFixed(1)+"%" : ""}
-            </strong>
-
-        </div>
-
-    </div>
-
-    `;
-
-
-    document.getElementById(targetId).innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-   PREDICTION RENDER
-========================================================= */
-
-function renderPrediction(p,targetId){
-
-    const el =
-        document.getElementById(targetId);
-
-
-    if(!p){
-
-        el.innerHTML = `
-            <div class="empty">
-                No user activity available yet.
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    const drop =
-        Number(p.dropoff_probability || 0);
-
-    const purchase =
-        Number(p.purchase_probability || 0);
-
-    const risk =
-        p.risk_level || "LOW";
-
-    const cls =
-        riskClass(risk);
-
-    const angle =
-        Math.min(
-            360,
-            drop * 3.6
-        );
-
-
-    el.innerHTML = `
-
-    <div class="predtop">
-
-        <div
-            class="gauge"
-            style="--angle:${angle}deg"
-        >
-
-            <div class="gtext">
-
-                <b>
-                    ${drop.toFixed(1)}%
-                </b>
-
-                <small>
-                    Drop-off Probability
-                </small>
-
-            </div>
-
-        </div>
-
-
-        <div>
-
-            <div class="metric">
-
-                <small>
-                    CURRENT USER
-                </small>
-
-                <b>
-                    ${esc(p.user_id || "—")}
-                </b>
-
-            </div>
-
-
-            <div class="metric">
-
-                <small>
-                    CURRENT STAGE
-                </small>
-
-                <b>
-                    ${esc(
-                        labels[p.current_stage]
-                        || p.current_stage
-                        || "—"
-                    )}
-                </b>
-
-            </div>
-
-
-            <div class="metric">
-
-                <small>
-                    RISK LEVEL
-                </small>
-
-                <b class="${cls}">
-                    ${esc(risk)}
-                </b>
-
-            </div>
-
-
-            <div class="metric">
-
-                <small>
-                    PURCHASE PROBABILITY
-                </small>
-
-                <b class="low">
-                    ${purchase.toFixed(1)}%
-                </b>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="recommend">
-
-        <small>
-            PREDICTION SOURCE
-        </small>
-
-        <b>
-            ${esc(
-                p.prediction_source
-                || "Random Forest ML Model"
-            )}
-        </b>
-
-
-        <small>
-            RECOMMENDED ACTION
-        </small>
-
-        <b>
-            ${esc(
-                p.action
-                || "Continue monitoring"
-            )}
-        </b>
-
-
-        <small>
-            AI RECOMMENDATION
-        </small>
-
-        <div>
-            ${esc(
-                p.recommendation
-                || "Continue monitoring user behaviour."
-            )}
-        </div>
-
-    </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-   ACTIVITY RENDER
-========================================================= */
-
-function renderActivity(events,targetId){
-
-    const el =
-        document.getElementById(targetId);
-
-
-    if(!events || !events.length){
-
-        el.innerHTML = `
-            <tr>
-                <td colspan="7" class="empty">
-                    No recent activity.
-                </td>
-            </tr>
-        `;
-
-        return;
-
-    }
-
-
-    el.innerHTML =
-        events
-        .slice(0,12)
-        .map(e => `
-
-        <tr>
-
-            <td>
-                ${esc(e.user_id || "—")}
-            </td>
-
-            <td>
-                ${esc(
-                    labels[e.event_type]
-                    || e.event_type
-                    || "—"
-                )}
-            </td>
-
-            <td>
-                ${esc(e.product_id || "—")}
-            </td>
-
-            <td>
-                ${esc(e.device || "desktop")}
-            </td>
-
-            <td>
-                ${esc(e.location || "India")}
-            </td>
-
-            <td>
-                ${esc(e.traffic_source || "direct")}
-            </td>
-
-            <td>
-                ${esc(
-                    e.timestamp
-                    || e.time
-                    || "—"
-                )}
-            </td>
-
-        </tr>
-
-        `)
-        .join("");
-
-}
-
-
-/* =========================================================
-   SIMPLE ACTIVITY FOR USER INSIGHTS
-========================================================= */
-
-function renderInsightsActivity(events){
-
-    const el =
-        document.getElementById(
-            "insightsActivity"
-        );
-
-
-    if(!events || !events.length){
-
-        el.innerHTML = `
-            <tr>
-                <td colspan="5" class="empty">
-                    No recent activity.
-                </td>
-            </tr>
-        `;
-
-        return;
-
-    }
-
-
-    el.innerHTML =
-        events
-        .slice(0,12)
-        .map(e => `
-
-        <tr>
-
-            <td>
-                ${esc(e.user_id || "—")}
-            </td>
-
-            <td>
-                ${esc(
-                    labels[e.event_type]
-                    || e.event_type
-                    || "—"
-                )}
-            </td>
-
-            <td>
-                ${esc(e.device || "desktop")}
-            </td>
-
-            <td>
-                ${esc(e.location || "India")}
-            </td>
-
-            <td>
-                ${esc(
-                    e.traffic_source
-                    || "direct"
-                )}
-            </td>
-
-        </tr>
-
-        `)
-        .join("");
-
-}
-
-
-/* =========================================================
-   MODEL EVENTS
-========================================================= */
-
-function renderModelEvents(events){
-
-    const el =
-        document.getElementById(
-            "modelEvents"
-        );
-
-
-    if(!events || !events.length){
-
-        el.innerHTML = `
-            <tr>
-                <td colspan="7" class="empty">
-                    No recent events.
-                </td>
-            </tr>
-        `;
-
-        return;
-
-    }
-
-
-    el.innerHTML =
-        events
-        .slice(0,15)
-        .map(e => `
-
-        <tr>
-
-            <td>
-                ${esc(e.user_id || "—")}
-            </td>
-
-            <td>
-                ${esc(
-                    labels[e.event_type]
-                    || e.event_type
-                    || "—"
-                )}
-            </td>
-
-            <td>
-                ${esc(e.product_id || "—")}
-            </td>
-
-            <td>
-                ${esc(e.device || "desktop")}
-            </td>
-
-            <td>
-                ${esc(e.location || "India")}
-            </td>
-
-            <td>
-                ${esc(
-                    e.traffic_source
-                    || "direct"
-                )}
-            </td>
-
-            <td>
-                ${esc(
-                    e.timestamp
-                    || e.time
-                    || "—"
-                )}
-            </td>
-
-        </tr>
-
-        `)
-        .join("");
-
+    font-size:14px;
+    color:#dbeafe;
 }
 
 
@@ -2581,151 +465,1266 @@ function renderModelEvents(events){
    EVENT SUMMARY
 ========================================================= */
 
-function renderSummary(c){
+.event-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+}
 
-    document.getElementById(
-        "summaryVisit"
-    ).textContent =
-        Number(c.visit || 0);
+.event-card{
+    padding:15px;
+    border:1px solid #17263a;
+    background:#07111f;
+    border-radius:9px;
+}
 
+.event-name{
+    color:#71839b;
+    font-size:11px;
+    margin-bottom:6px;
+}
 
-    document.getElementById(
-        "summaryProduct"
-    ).textContent =
-        Number(c.product_view || 0);
-
-
-    document.getElementById(
-        "summaryCart"
-    ).textContent =
-        Number(c.add_to_cart || 0);
-
-
-    document.getElementById(
-        "summaryCheckout"
-    ).textContent =
-        Number(c.checkout || 0);
-
-
-    document.getElementById(
-        "summaryPurchase"
-    ).textContent =
-        Number(c.purchase || 0);
-
+.event-count{
+    font-size:20px;
+    font-weight:700;
 }
 
 
 /* =========================================================
-   MODEL INFORMATION
+   LIVE EVENTS TABLE
 ========================================================= */
 
-function renderModelInfo(p){
+.table-wrapper{
+    overflow-x:auto;
+}
 
-    if(!p){
-        return;
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    color:#71839b;
+    font-size:11px;
+    font-weight:600;
+    text-align:left;
+    padding:13px;
+    border-bottom:1px solid #17263a;
+}
+
+td{
+    color:#c5d2e2;
+    font-size:12px;
+    padding:13px;
+    border-bottom:1px solid #111d2d;
+}
+
+.event-pill{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:12px;
+    background:#0d2a48;
+    color:#38bdf8;
+    font-size:10px;
+}
+
+
+/* =========================================================
+   E-COMMERCE DATASET
+========================================================= */
+
+.dataset-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+}
+
+.dataset-card{
+    background:#07111f;
+    border:1px solid #17263a;
+    border-radius:10px;
+    padding:18px;
+}
+
+.dataset-card small{
+    display:block;
+    color:#64748b;
+    font-size:10px;
+    margin-bottom:9px;
+    letter-spacing:.5px;
+}
+
+.dataset-card strong{
+    font-size:26px;
+    color:#38bdf8;
+}
+
+.dataset-purpose{
+    margin-top:18px;
+    padding:17px;
+    border-radius:9px;
+    background:#07111f;
+    border:1px solid #17263a;
+    color:#a9b8ca;
+    font-size:12px;
+    line-height:1.6;
+}
+
+.dataset-purpose strong{
+    display:block;
+    color:#22d3ee;
+    font-size:10px;
+    letter-spacing:1px;
+    margin-bottom:7px;
+}
+
+
+/* =========================================================
+   EMPTY / LOADING
+========================================================= */
+
+.loading{
+    padding:20px;
+    color:#64748b;
+    font-size:13px;
+}
+
+.empty{
+    color:#64748b;
+    padding:20px 0;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.footer{
+    text-align:center;
+    padding:30px;
+    color:#52647a;
+    font-size:11px;
+    border-top:1px solid #17263a;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:1100px){
+
+    .cards{
+        grid-template-columns:repeat(2,1fr);
     }
 
-
-    const source =
-        p.prediction_source
-        || "Random Forest ML Model";
-
-    const user =
-        p.user_id || "—";
-
-    const stage =
-        labels[p.current_stage]
-        || p.current_stage
-        || "—";
-
-
-    let duration = "—";
-
-
-    if(p.session_duration_seconds !== undefined){
-
-        const seconds =
-            Number(
-                p.session_duration_seconds
-            );
-
-
-        const minutes =
-            Math.floor(seconds / 60);
-
-        const secs =
-            seconds % 60;
-
-
-        duration =
-            `${minutes}m ${secs}s`;
-
+    .prediction-grid{
+        grid-template-columns:1fr;
     }
 
+    .model-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
 
-    /*
+    .dataset-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+}
+
+@media(max-width:800px){
+
+    .sidebar{
+        width:70px;
+        padding:20px 10px;
+    }
+
+    .logo,
+    .subtitle,
+    .nav-title,
+    .nav span{
+        display:none;
+    }
+
+    .nav a{
+        justify-content:center;
+    }
+
+    .main{
+        margin-left:70px;
+    }
+
+    .content{
+        padding:22px 18px;
+    }
+
+    .header{
+        padding:0 18px;
+    }
+
+    .event-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+}
+
+@media(max-width:550px){
+
+    .cards{
+        grid-template-columns:1fr;
+    }
+
+    .model-grid,
+    .dataset-grid,
+    .event-grid{
+        grid-template-columns:1fr;
+    }
+
+    .funnel-label{
+        width:85px;
+        font-size:11px;
+    }
+
+    .funnel-details{
+        margin-left:100px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+        ShopFlow <span>Analytics</span>
+    </div>
+
+    <div class="subtitle">
+        User Journey Intelligence
+    </div>
+
+
+    <div class="nav-title">
+        ANALYTICS
+    </div>
+
+    <nav class="nav">
+
+        <a href="#overview" class="active">
+            <div class="nav-icon">▦</div>
+            <span>Overview</span>
+        </a>
+
+        <a href="#live">
+            <div class="nav-icon">◉</div>
+            <span>Live User Journey</span>
+        </a>
+
+        <a href="#funnel">
+            <div class="nav-icon">▽</div>
+            <span>Funnel Analysis</span>
+        </a>
+
+        <a href="#dropoff">
+            <div class="nav-icon">⚠</div>
+            <span>Drop-off Prediction</span>
+        </a>
+
+        <a href="#insights">
+            <div class="nav-icon">◈</div>
+            <span>User Insights</span>
+        </a>
+
+        <a href="#model">
+            <div class="nav-icon">◆</div>
+            <span>Model Performance</span>
+        </a>
+
+        <a href="#ecommerceDataset">
+            <div class="nav-icon">◫</div>
+            <span>E-commerce Dataset</span>
+        </a>
+
+    </nav>
+
+</aside>
+
+
+<!-- =====================================================
+     MAIN
+===================================================== -->
+
+<main class="main">
+
+
+<header class="header">
+
+    <div>
+
+        <div class="header-title">
+            Analytics Dashboard
+        </div>
+
+        <div class="header-subtitle">
+            User Journey & Drop-off Analysis
+        </div>
+
+    </div>
+
+
+    <div class="status">
+
+        <div class="status-dot"></div>
+
+        Live System
+
+    </div>
+
+</header>
+
+
+<div class="content">
+
+
+<!-- =====================================================
+     OVERVIEW
+===================================================== -->
+
+<section id="overview" class="section">
+
+    <div class="section-label">
         Overview
-    */
-
-    document.getElementById(
-        "overviewPredictionSource"
-    ).textContent = source;
+    </div>
 
 
-    document.getElementById(
-        "overviewCurrentUser"
-    ).textContent = user;
+    <div class="cards">
+
+        <div class="card">
+
+            <div class="card-title">
+                Total Events
+            </div>
+
+            <div
+                id="events"
+                class="card-value card-blue">
+                —
+            </div>
+
+        </div>
 
 
-    document.getElementById(
-        "overviewCurrentStage"
-    ).textContent = stage;
+        <div class="card">
+
+            <div class="card-title">
+                Unique Users
+            </div>
+
+            <div
+                id="users"
+                class="card-value card-cyan">
+                —
+            </div>
+
+        </div>
 
 
-    document.getElementById(
-        "overviewSessionDuration"
-    ).textContent = duration;
+        <div class="card">
+
+            <div class="card-title">
+                Product Views
+            </div>
+
+            <div
+                id="views"
+                class="card-value">
+                —
+            </div>
+
+        </div>
 
 
-    /*
-        Model Performance page
-    */
+        <div class="card">
 
-    document.getElementById(
-        "modelPredictionSource"
-    ).textContent = source;
+            <div class="card-title">
+                Purchases
+            </div>
+
+            <div
+                id="purchases"
+                class="card-value card-green">
+                —
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 
 
-    document.getElementById(
-        "modelCurrentUser"
-    ).textContent = user;
+<!-- =====================================================
+     LIVE USER JOURNEY
+===================================================== -->
+
+<section id="live" class="section">
+
+    <div class="section-label">
+        Live User Journey
+    </div>
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    Recent User Events
+                </div>
+
+                <div class="note">
+                    Latest tracked behaviour
+                </div>
+
+            </div>
+
+        </div>
 
 
-    document.getElementById(
-        "modelCurrentStage"
-    ).textContent = stage;
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>USER ID</th>
+                        <th>EVENT</th>
+                        <th>PRODUCT</th>
+                        <th>DEVICE</th>
+                        <th>LOCATION</th>
+                        <th>TRAFFIC</th>
+                        <th>TIMESTAMP</th>
+
+                    </tr>
+
+                </thead>
 
 
-    document.getElementById(
-        "modelSessionDuration"
-    ).textContent = duration;
+                <tbody id="eventsTable">
 
-}
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="loading">
+
+                            Loading events...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     FUNNEL
+===================================================== -->
+
+<section id="funnel" class="section">
+
+    <div class="section-label">
+        Funnel Analysis
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    User Journey Funnel
+                </div>
+
+                <div class="note">
+                    Conversion and drop-off between journey stages
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="funnelContainer"
+            class="panel-body">
+
+            <div class="loading">
+                Loading funnel...
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     DROP-OFF PREDICTION
+===================================================== -->
+
+<section id="dropoff" class="section">
+
+    <div class="section-label">
+        Machine Learning
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    Drop-off Prediction
+                </div>
+
+                <div class="note">
+                    Random Forest prediction for latest active user
+                </div>
+
+            </div>
+
+
+            <div
+                id="predictionSource"
+                class="live">
+
+                ML
+
+            </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+            <div class="prediction-grid">
+
+
+                <div class="prediction-card">
+
+                    <div class="prediction-label">
+                        PURCHASE PROBABILITY
+                    </div>
+
+                    <div
+                        id="purchaseProbability"
+                        class="prediction-value purchase-value">
+
+                        —
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            id="purchaseProgress"
+                            class="progress-bar progress-green"
+                            style="width:0%">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="prediction-card">
+
+                    <div class="prediction-label">
+                        DROP-OFF PROBABILITY
+                    </div>
+
+                    <div
+                        id="dropoffProbability"
+                        class="prediction-value dropoff-value">
+
+                        —
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            id="dropoffProgress"
+                            class="progress-bar progress-red"
+                            style="width:0%">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="prediction-card">
+
+                    <div class="prediction-label">
+                        RISK LEVEL
+                    </div>
+
+                    <div
+                        id="riskLevel"
+                        class="prediction-value">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="recommendation">
+
+                <div class="recommendation-title">
+                    Recommendation
+                </div>
+
+                <div
+                    id="recommendation"
+                    class="recommendation-text">
+
+                    Waiting for prediction...
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="predictionAction"
+                class="recommendation">
+
+                <div class="recommendation-title">
+                    Recommended Action
+                </div>
+
+                <div
+                    id="action"
+                    class="recommendation-text">
+
+                    —
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     USER INSIGHTS
+===================================================== -->
+
+<section id="insights" class="section">
+
+    <div class="section-label">
+        User Insights
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    Current User Behaviour
+                </div>
+
+                <div class="note">
+                    Features used by the prediction system
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+            <div class="event-grid">
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        USER ID
+                    </div>
+
+                    <div
+                        id="insightUser"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        CURRENT STAGE
+                    </div>
+
+                    <div
+                        id="insightStage"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        EVENT NUMBER
+                    </div>
+
+                    <div
+                        id="insightEvents"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        SESSION DURATION
+                    </div>
+
+                    <div
+                        id="insightDuration"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        VISITS
+                    </div>
+
+                    <div
+                        id="insightVisits"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        PRODUCT VIEWS
+                    </div>
+
+                    <div
+                        id="insightViews"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        CART EVENTS
+                    </div>
+
+                    <div
+                        id="insightCart"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        CHECKOUTS
+                    </div>
+
+                    <div
+                        id="insightCheckout"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        PURCHASES
+                    </div>
+
+                    <div
+                        id="insightPurchase"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        DEVICE
+                    </div>
+
+                    <div
+                        id="insightDevice"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        LOCATION
+                    </div>
+
+                    <div
+                        id="insightLocation"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+                <div class="event-card">
+
+                    <div class="event-name">
+                        TRAFFIC SOURCE
+                    </div>
+
+                    <div
+                        id="insightTraffic"
+                        class="event-count">
+
+                        —
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     MODEL PERFORMANCE
+===================================================== -->
+
+<section id="model" class="section">
+
+    <div class="section-label">
+        Model Performance
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    Random Forest ML Model
+                </div>
+
+                <div class="note">
+                    Drop-off and purchase prediction engine
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="model-status">
+
+            <div
+                id="modelStatus"
+                class="model-loaded">
+
+                ● Checking ML model...
+
+            </div>
+
+
+            <div class="model-grid">
+
+
+                <div class="model-card">
+
+                    <small>
+                        MODEL
+                    </small>
+
+                    <strong>
+                        Random Forest
+                    </strong>
+
+                </div>
+
+
+                <div class="model-card">
+
+                    <small>
+                        MODEL FILE
+                    </small>
+
+                    <strong>
+                        dropoff_model.pkl
+                    </strong>
+
+                </div>
+
+
+                <div class="model-card">
+
+                    <small>
+                        OUTPUT
+                    </small>
+
+                    <strong>
+                        Purchase Probability
+                    </strong>
+
+                </div>
+
+
+                <div class="model-card">
+
+                    <small>
+                        OUTPUT
+                    </small>
+
+                    <strong>
+                        Drop-off Probability
+                    </strong>
+
+                </div>
+
+
+                <div class="model-card">
+
+                    <small>
+                        OUTPUT
+                    </small>
+
+                    <strong>
+                        Risk Level
+                    </strong>
+
+                </div>
+
+
+                <div class="model-card">
+
+                    <small>
+                        OUTPUT
+                    </small>
+
+                    <strong>
+                        Recommendation
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     E-COMMERCE DATASET
+===================================================== -->
+
+<section
+    id="ecommerceDataset"
+    class="section">
+
+    <div class="section-label">
+        E-commerce Dataset
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <div class="panel-title">
+                    E-commerce Dataset Analysis
+                </div>
+
+                <div class="note">
+                    Large-scale e-commerce behavioural event dataset
+                </div>
+
+            </div>
+
+
+            <div class="status">
+
+                <div class="status-dot"></div>
+
+                Dataset Active
+
+            </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+            <div class="dataset-grid">
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        TOTAL EVENTS
+                    </small>
+
+                    <strong id="datasetEvents">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        UNIQUE USERS
+                    </small>
+
+                    <strong id="datasetUsers">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        PRODUCT VIEWS
+                    </small>
+
+                    <strong id="datasetViews">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        ADD TO CART
+                    </small>
+
+                    <strong id="datasetCart">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        CHECKOUTS
+                    </small>
+
+                    <strong id="datasetCheckout">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="dataset-card">
+
+                    <small>
+                        PURCHASES
+                    </small>
+
+                    <strong id="datasetPurchases">
+                        —
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="dataset-purpose">
+
+                <strong>
+                    DATASET PURPOSE
+                </strong>
+
+                The e-commerce dataset is used for
+                large-scale user journey analysis,
+                funnel analysis and machine-learning
+                based purchase and drop-off prediction.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+</div>
+
+
+<footer class="footer">
+
+    ShopFlow Analytics
+
+    <br><br>
+
+    Real-time User Journey Analytics & Drop-off Prediction
+
+</footer>
+
+
+</main>
+
+
+<script>
 
 
 /* =========================================================
-   MAIN LOAD
+   LOAD DASHBOARD
 ========================================================= */
 
-async function load(){
+async function loadDashboard(){
 
     try{
 
+        /*
+         * ONLY LIVE CHANGE:
+         * Add timestamp to prevent browser/proxy caching.
+         * Everything else remains the same.
+         */
+
         const response =
             await fetch(
-                "/dashboard-data",
+                "/dashboard-data?t=" +
+                Date.now(),
                 {
-                    cache:"no-store"
+                    cache:"no-store",
+                    headers:{
+                        "Cache-Control":"no-cache",
+                        "Pragma":"no-cache"
+                    }
                 }
             );
 
@@ -2743,19 +1742,19 @@ async function load(){
             await response.json();
 
 
+        console.log(
+            "LIVE DASHBOARD DATA:",
+            data
+        );
+
+
         const counts =
             data.event_counts || {};
 
-        const prediction =
-            data.prediction || null;
 
-        const events =
-            data.recent_events || [];
-
-
-        /* =========================
-           KPI
-        ========================= */
+        /* =================================================
+           OVERVIEW
+        ================================================= */
 
         document.getElementById(
             "events"
@@ -2789,155 +1788,131 @@ async function load(){
             ).toLocaleString();
 
 
-        /* =========================
+        /* =================================================
            FUNNEL
-        ========================= */
+        ================================================= */
 
         renderFunnel(
-            data,
-            "overviewFunnel"
+            data.funnel || {}
         );
 
 
-        renderFunnel(
-            data,
-            "standaloneFunnel"
-        );
-
-
-        /* =========================
-           PREDICTION
-        ========================= */
+        /* =================================================
+           ML PREDICTION
+        ================================================= */
 
         renderPrediction(
-            prediction,
-            "overviewPrediction"
+            data.prediction
         );
 
 
-        renderPrediction(
-            prediction,
-            "standalonePrediction"
+        /* =================================================
+           LIVE EVENTS
+        ================================================= */
+
+        renderLiveEvents(
+            data.recent_events || []
         );
 
 
-        /* =========================
-           ACTIVITY
-        ========================= */
+        /* =================================================
+           USER INSIGHTS
+        ================================================= */
 
-        renderActivity(
-            events,
-            "overviewActivity"
+        renderInsights(
+            data.prediction
         );
 
 
-        renderActivity(
-            events,
-            "journeyActivity"
-        );
+        /* =================================================
+           MODEL STATUS
+        ================================================= */
+
+        const modelStatus =
+            document.getElementById(
+                "modelStatus"
+            );
 
 
-        renderInsightsActivity(
-            events
-        );
+        if(data.ml_model_loaded){
+
+            modelStatus.innerHTML =
+                "● Random Forest ML model loaded and ready";
+
+            modelStatus.style.color =
+                "#22c55e";
+
+        }
+        else{
+
+            modelStatus.innerHTML =
+                "⚠ ML model is not loaded";
+
+            modelStatus.style.color =
+                "#f59e0b";
+
+        }
 
 
-        renderModelEvents(
-            events
-        );
+        /* =================================================
+           E-COMMERCE DATASET
+        ================================================= */
 
-
-        /* =========================
-           SUMMARY
-        ========================= */
-
-        renderSummary(
-            counts
-        );
-
-
-        /* =========================
-           MODEL
-        ========================= */
-
-        renderModelInfo(
-            prediction
-        );
-
-
-        /* =========================
-           STATUS
-        ========================= */
-
-        const modelLoaded =
-            data.ml_model_loaded;
-
-
-        const modelText =
-            modelLoaded
-                ? "Random Forest ML model loaded and ready"
-                : "ML model not loaded";
+        document.getElementById(
+            "datasetEvents"
+        ).textContent =
+            Number(
+                data.total_events || 0
+            ).toLocaleString();
 
 
         document.getElementById(
-            "overviewModelStatus"
+            "datasetUsers"
         ).textContent =
-            "● " + modelText;
+            Number(
+                data.unique_users || 0
+            ).toLocaleString();
 
 
         document.getElementById(
-            "modelStatus"
+            "datasetViews"
         ).textContent =
-            "● " + modelText;
+            Number(
+                counts.product_view || 0
+            ).toLocaleString();
 
 
         document.getElementById(
-            "model"
+            "datasetCart"
         ).textContent =
-            modelLoaded
-                ? "Random Forest ML model loaded successfully"
-                : "ML model not loaded";
-
-
-        /* =========================
-           LATEST USER
-        ========================= */
-
-        document.getElementById(
-            "latest"
-        ).textContent =
-            data.latest_user
-                ? `Latest activity: ${data.latest_user}`
-                : "Waiting for activity";
-
-
-        /* =========================
-           ALERT
-        ========================= */
-
-        document.getElementById(
-            "alert"
-        ).textContent =
-            data.total_events
-                ? `${data.total_events} events tracked successfully`
-                : "No events tracked yet";
-
-
-    }catch(error){
-
-        console.error(error);
+            Number(
+                counts.add_to_cart || 0
+            ).toLocaleString();
 
 
         document.getElementById(
-            "alert"
+            "datasetCheckout"
         ).textContent =
-            "Unable to load dashboard data. Check Flask server.";
+            Number(
+                counts.checkout || 0
+            ).toLocaleString();
 
 
         document.getElementById(
-            "model"
+            "datasetPurchases"
         ).textContent =
-            "Unable to check ML model.";
+            Number(
+                counts.purchase || 0
+            ).toLocaleString();
+
+
+    }
+    catch(error){
+
+        console.error(
+            "Dashboard error:",
+            error
+        );
 
     }
 
@@ -2945,17 +1920,654 @@ async function load(){
 
 
 /* =========================================================
+   FUNNEL RENDER
+========================================================= */
+
+function renderFunnel(funnel){
+
+    const container =
+        document.getElementById(
+            "funnelContainer"
+        );
+
+
+    const stages = [
+
+        {
+            key:"visit",
+            label:"Visit"
+        },
+
+        {
+            key:"product_view",
+            label:"Product View"
+        },
+
+        {
+            key:"add_to_cart",
+            label:"Add to Cart"
+        },
+
+        {
+            key:"view_cart",
+            label:"View Cart"
+        },
+
+        {
+            key:"checkout",
+            label:"Checkout"
+        },
+
+        {
+            key:"purchase",
+            label:"Purchase"
+        }
+
+    ];
+
+
+    const values =
+        stages.map(
+            stage =>
+                Number(
+                    funnel[
+                        stage.key
+                    ] || 0
+                )
+        );
+
+
+    const max =
+        Math.max(
+            ...values,
+            1
+        );
+
+
+    let html = "";
+
+
+    stages.forEach(
+        (stage,index) => {
+
+            const value =
+                values[index];
+
+
+            const width =
+                Math.max(
+                    4,
+                    (value / max) * 100
+                );
+
+
+            const previous =
+                index === 0
+                    ? value
+                    : values[index - 1];
+
+
+            let conversion = 100;
+
+            let dropoff = 0;
+
+
+            if(index > 0){
+
+                conversion =
+                    previous > 0
+                        ? (
+                            value /
+                            previous
+                        ) * 100
+                        : 0;
+
+
+                dropoff =
+                    previous > 0
+                        ? 100 -
+                          conversion
+                        : 0;
+
+            }
+
+
+            html += `
+
+                <div class="funnel-stage">
+
+                    <div class="funnel-row">
+
+                        <div class="funnel-label">
+
+                            ${stage.label}
+
+                        </div>
+
+
+                        <div class="funnel-bar-container">
+
+                            <div
+                                class="funnel-bar"
+                                style="width:${width}%">
+
+                                ${value.toLocaleString()}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="funnel-number">
+
+                            ${value.toLocaleString()}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="funnel-details">
+
+                        <span>
+
+                            Conversion:
+                            ${conversion.toFixed(1)}%
+
+                        </span>
+
+                        <span>
+
+                            Drop-off:
+                            ${dropoff.toFixed(1)}%
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   ML PREDICTION RENDER
+========================================================= */
+
+function renderPrediction(prediction){
+
+    if(!prediction){
+
+        document.getElementById(
+            "purchaseProbability"
+        ).textContent = "—";
+
+
+        document.getElementById(
+            "dropoffProbability"
+        ).textContent = "—";
+
+
+        document.getElementById(
+            "riskLevel"
+        ).textContent = "—";
+
+
+        document.getElementById(
+            "recommendation"
+        ).textContent =
+            "Waiting for user activity.";
+
+
+        return;
+
+    }
+
+
+    const purchase =
+        Number(
+            prediction.purchase_probability || 0
+        );
+
+
+    const dropoff =
+        Number(
+            prediction.dropoff_probability || 0
+        );
+
+
+    document.getElementById(
+        "purchaseProbability"
+    ).textContent =
+        purchase.toFixed(2) + "%";
+
+
+    document.getElementById(
+        "dropoffProbability"
+    ).textContent =
+        dropoff.toFixed(2) + "%";
+
+
+    document.getElementById(
+        "purchaseProgress"
+    ).style.width =
+        purchase + "%";
+
+
+    document.getElementById(
+        "dropoffProgress"
+    ).style.width =
+        dropoff + "%";
+
+
+    const risk =
+        document.getElementById(
+            "riskLevel"
+        );
+
+
+    risk.textContent =
+        prediction.risk_level || "LOW";
+
+
+    risk.className =
+        "prediction-value";
+
+
+    if(
+        prediction.risk_level ===
+        "HIGH"
+    ){
+
+        risk.classList.add(
+            "risk-high"
+        );
+
+    }
+    else if(
+        prediction.risk_level ===
+        "MEDIUM"
+    ){
+
+        risk.classList.add(
+            "risk-medium"
+        );
+
+    }
+    else{
+
+        risk.classList.add(
+            "risk-low"
+        );
+
+    }
+
+
+    document.getElementById(
+        "recommendation"
+    ).textContent =
+        prediction.recommendation ||
+        "No recommendation available.";
+
+
+    document.getElementById(
+        "action"
+    ).textContent =
+        prediction.action ||
+        "Continue monitoring";
+
+
+    document.getElementById(
+        "predictionSource"
+    ).textContent =
+        prediction.prediction_source ||
+        "ML";
+
+}
+
+
+/* =========================================================
+   USER INSIGHTS
+========================================================= */
+
+function renderInsights(prediction){
+
+    if(!prediction){
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "insightUser"
+    ).textContent =
+        prediction.user_id || "—";
+
+
+    document.getElementById(
+        "insightStage"
+    ).textContent =
+        prediction.current_stage || "—";
+
+
+    document.getElementById(
+        "insightEvents"
+    ).textContent =
+        prediction.event_number || 0;
+
+
+    const seconds =
+        Number(
+            prediction.session_duration_seconds || 0
+        );
+
+
+    const minutes =
+        Math.floor(
+            seconds / 60
+        );
+
+
+    document.getElementById(
+        "insightDuration"
+    ).textContent =
+        minutes + " min";
+
+
+    document.getElementById(
+        "insightVisits"
+    ).textContent =
+        prediction.visit_count || 0;
+
+
+    document.getElementById(
+        "insightViews"
+    ).textContent =
+        prediction.product_view_count || 0;
+
+
+    document.getElementById(
+        "insightCart"
+    ).textContent =
+        prediction.cart_count || 0;
+
+
+    document.getElementById(
+        "insightCheckout"
+    ).textContent =
+        prediction.checkout_count || 0;
+
+
+    document.getElementById(
+        "insightPurchase"
+    ).textContent =
+        prediction.purchase_count || 0;
+
+
+    document.getElementById(
+        "insightDevice"
+    ).textContent =
+        prediction.device || "—";
+
+
+    document.getElementById(
+        "insightLocation"
+    ).textContent =
+        prediction.location || "—";
+
+
+    document.getElementById(
+        "insightTraffic"
+    ).textContent =
+        prediction.traffic_source || "—";
+
+}
+
+
+/* =========================================================
+   LIVE EVENTS
+========================================================= */
+
+function renderLiveEvents(events){
+
+    const table =
+        document.getElementById(
+            "eventsTable"
+        );
+
+
+    if(!events.length){
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    class="loading">
+
+                    No events available.
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    table.innerHTML =
+        events.map(
+            event => `
+
+                <tr>
+
+                    <td>
+
+                        ${escapeHTML(
+                            event.user_id || "—"
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        <span class="event-pill">
+
+                            ${escapeHTML(
+                                event.event_type || "—"
+                            )}
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        ${escapeHTML(
+                            event.product_id || "—"
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        ${escapeHTML(
+                            event.device || "—"
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        ${escapeHTML(
+                            event.location || "—"
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        ${escapeHTML(
+                            event.traffic_source || "—"
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        ${formatDate(
+                            event.timestamp
+                        )}
+
+                    </td>
+
+                </tr>
+
+            `
+        ).join("");
+
+}
+
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatDate(timestamp){
+
+    if(!timestamp){
+
+        return "—";
+
+    }
+
+
+    try{
+
+        return new Date(
+            timestamp
+        ).toLocaleString();
+
+    }
+
+    catch(error){
+
+        return timestamp;
+
+    }
+
+}
+
+
+/* =========================================================
+   SIDEBAR ACTIVE ITEM
+========================================================= */
+
+const navLinks =
+    document.querySelectorAll(
+        ".nav a"
+    );
+
+
+navLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            function(){
+
+                navLinks.forEach(
+                    item =>
+                        item.classList.remove(
+                            "active"
+                        )
+                );
+
+
+                this.classList.add(
+                    "active"
+                );
+
+            }
+        );
+
+    }
+);
+
+
+/* =========================================================
    START
 ========================================================= */
 
-load();
+loadDashboard();
+
+
+/* Refresh every 5 seconds */
 
 setInterval(
-    load,
+    loadDashboard,
     5000
 );
 
 </script>
 
+
 </body>
+
 </html>

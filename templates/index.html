@@ -1011,13 +1011,198 @@
 
 
 <!-- ============================================================
-     TRACKER
-     
-     IMPORTANT:
-     tracker.js is now a separate file.
+     LIVE SHOPFLOW TRACKER
 ============================================================ -->
 
-<script src="{{ url_for('static', filename='js/tracker.js') }}"></script>
+<script>
+
+async function trackEvent(eventType, productId = null) {
+
+    try {
+
+        let userId =
+            localStorage.getItem(
+                "shopflow_user_id"
+            );
+
+
+        if (!userId) {
+
+            userId =
+                "LIVE_" +
+                Math.random()
+                    .toString(36)
+                    .substring(2, 10)
+                    .toUpperCase();
+
+
+            localStorage.setItem(
+                "shopflow_user_id",
+                userId
+            );
+
+        }
+
+
+        window.SHOPFLOW_USER_ID =
+            userId;
+
+
+        let device =
+            "desktop";
+
+
+        if (
+            window.innerWidth <= 600
+        ) {
+
+            device =
+                "mobile";
+
+        }
+        else if (
+            window.innerWidth <= 1000
+        ) {
+
+            device =
+                "tablet";
+
+        }
+
+
+        const eventData = {
+
+            user_id:
+                userId,
+
+            event_type:
+                eventType,
+
+            device:
+                device,
+
+            location:
+                "India",
+
+            traffic_source:
+                "direct",
+
+            product_id:
+                productId
+
+        };
+
+
+        console.log(
+            "SHOPFLOW EVENT:",
+            eventData
+        );
+
+
+        const response =
+            await fetch(
+                "/track-event",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            eventData
+                        )
+
+                }
+            );
+
+
+        console.log(
+            "TRACK EVENT RESPONSE:",
+            response.status
+        );
+
+
+        if (
+            !response.ok
+        ) {
+
+            console.error(
+                "Event tracking failed:",
+                response.status
+            );
+
+            return false;
+
+        }
+
+
+        let result = null;
+
+
+        try {
+
+            result =
+                await response.json();
+
+        }
+        catch(error) {
+
+            console.log(
+                "No JSON response from server."
+            );
+
+        }
+
+
+        console.log(
+            "EVENT SAVED:",
+            result
+        );
+
+
+        return true;
+
+    }
+    catch(error) {
+
+        console.error(
+            "TRACK EVENT ERROR:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* ============================================================
+   INITIAL VISIT
+============================================================ */
+
+window.addEventListener(
+    "load",
+    function() {
+
+        trackEvent(
+            "visit"
+        );
+
+    }
+);
+
+</script>
 
 
 <script>
@@ -1027,7 +1212,10 @@
 ============================================================ */
 
 let userId =
-    localStorage.getItem("shopflow_user_id");
+    localStorage.getItem(
+        "shopflow_user_id"
+    );
+
 
 if (!userId) {
 
@@ -1038,13 +1226,17 @@ if (!userId) {
             .substring(2, 10)
             .toUpperCase();
 
+
     localStorage.setItem(
         "shopflow_user_id",
         userId
     );
+
 }
 
-window.SHOPFLOW_USER_ID = userId;   
+
+window.SHOPFLOW_USER_ID =
+    userId;
 
 
 /* ============================================================
@@ -1052,23 +1244,36 @@ window.SHOPFLOW_USER_ID = userId;
 ============================================================ */
 
 const userName =
-    localStorage.getItem("shopflow_full_name") || "Customer";
+    localStorage.getItem(
+        "shopflow_full_name"
+    ) || "Customer";
+
 
 const userEmail =
-    localStorage.getItem("shopflow_email") || "";
+    localStorage.getItem(
+        "shopflow_email"
+    ) || "";
+
 
 const userAge =
-    localStorage.getItem("shopflow_age") || "";
+    localStorage.getItem(
+        "shopflow_age"
+    ) || "";
+
 
 const userPhone =
-    localStorage.getItem("shopflow_phone") || "";
+    localStorage.getItem(
+        "shopflow_phone"
+    ) || "";
 
 
 /* ============================================================
    WELCOME
 ============================================================ */
 
-document.getElementById("welcomeText").innerHTML =
+document.getElementById(
+    "welcomeText"
+).innerHTML =
     "Welcome, <strong>" +
     userName +
     "</strong> 👋";
@@ -1149,7 +1354,9 @@ const productsData = [
 
 let cart =
     JSON.parse(
-        localStorage.getItem("shopflow_cart") || "[]"
+        localStorage.getItem(
+            "shopflow_cart"
+        ) || "[]"
     );
 
 
@@ -1159,7 +1366,9 @@ let cart =
 
 let orders =
     JSON.parse(
-        localStorage.getItem("shopflow_orders") || "[]"
+        localStorage.getItem(
+            "shopflow_orders"
+        ) || "[]"
     );
 
 
@@ -1172,21 +1381,32 @@ function viewProduct(productId) {
     const product =
         productsData.find(
             function(item) {
-                return item.id === productId;
+
+                return (
+                    item.id ===
+                    productId
+                );
+
             }
         );
 
+
     if (!product) {
+
         return;
+
     }
+
 
     trackEvent(
         "product_view",
         product.id
     );
 
+
     showNotification(
-        "Viewing " + product.name
+        "Viewing " +
+        product.name
     );
 
 }
@@ -1202,7 +1422,9 @@ function displayProducts(
 ) {
 
     const container =
-        document.getElementById("products");
+        document.getElementById(
+            "products"
+        );
 
 
     const filtered =
@@ -1211,7 +1433,8 @@ function displayProducts(
 
                 const categoryMatch =
                     category === "All" ||
-                    product.category === category;
+                    product.category ===
+                    category;
 
 
                 const searchMatch =
@@ -1231,14 +1454,18 @@ function displayProducts(
         );
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     filtered.forEach(
         function(product) {
 
             const card =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
+
 
             card.className =
                 "product-card";
@@ -1298,7 +1525,9 @@ function displayProducts(
             `;
 
 
-            container.appendChild(card);
+            container.appendChild(
+                card
+            );
 
         }
     );
@@ -1344,7 +1573,9 @@ function filterCategory(
 
 
     document
-        .querySelectorAll(".category-btn")
+        .querySelectorAll(
+            ".category-btn"
+        )
         .forEach(
             function(btn) {
 
@@ -1386,25 +1617,36 @@ function addToCart(
     const product =
         productsData.find(
             function(item) {
-                return item.id === productId;
+
+                return (
+                    item.id ===
+                    productId
+                );
+
             }
         );
 
 
     if (!product) {
+
         return;
+
     }
 
 
     cart.push({
 
-        id: product.id,
+        id:
+            product.id,
 
-        name: product.name,
+        name:
+            product.name,
 
-        price: product.price,
+        price:
+            product.price,
 
-        icon: product.icon
+        icon:
+            product.icon
 
     });
 
@@ -1436,7 +1678,9 @@ function saveCart() {
 
     localStorage.setItem(
         "shopflow_cart",
-        JSON.stringify(cart)
+        JSON.stringify(
+            cart
+        )
     );
 
 }
@@ -1468,7 +1712,9 @@ function removeFromCart(
         index < 0 ||
         index >= cart.length
     ) {
+
         return;
+
     }
 
 
@@ -1506,7 +1752,10 @@ function getCartTotal() {
     return cart.reduce(
         function(total, item) {
 
-            return total + item.price;
+            return (
+                total +
+                item.price
+            );
 
         },
         0
@@ -1557,7 +1806,8 @@ function renderCart() {
     }
 
 
-    let html = "";
+    let html =
+        "";
 
 
     cart.forEach(
@@ -1703,7 +1953,8 @@ function prepareCheckout() {
         );
 
 
-    let html = "";
+    let html =
+        "";
 
 
     cart.forEach(
@@ -1756,7 +2007,7 @@ function prepareCheckout() {
    PLACE ORDER
 ============================================================ */
 
-function placeOrder() {
+async function placeOrder() {
 
     if (
         cart.length === 0
@@ -1892,17 +2143,31 @@ function placeOrder() {
 
     localStorage.setItem(
         "shopflow_orders",
-        JSON.stringify(orders)
+        JSON.stringify(
+            orders
+        )
     );
 
 
-    /* PURCHASE EVENT */
+    /* ========================================================
+       PURCHASE EVENT
+    ======================================================== */
 
-    trackEvent(
-        "purchase",
+    const purchasedProductId =
         cart.length > 0
             ? cart[0].id
-            : null
+            : null;
+
+
+    /*
+     * Wait for the purchase request
+     * to reach Flask before clearing
+     * the cart / changing page.
+     */
+
+    await trackEvent(
+        "purchase",
+        purchasedProductId
     );
 
 
@@ -2067,13 +2332,15 @@ function renderOrders() {
     }
 
 
-    let html = "";
+    let html =
+        "";
 
 
     orders.forEach(
         function(order) {
 
-            let itemsHTML = "";
+            let itemsHTML =
+                "";
 
 
             order.items.forEach(
@@ -2161,7 +2428,9 @@ function showPage(
 ) {
 
     document
-        .querySelectorAll(".page")
+        .querySelectorAll(
+            ".page"
+        )
         .forEach(
             function(page) {
 
@@ -2180,7 +2449,9 @@ function showPage(
 
 
     if (!page) {
+
         return;
+
     }
 
 
@@ -2202,6 +2473,7 @@ function showPage(
     ) {
 
         renderCart();
+
 
         trackEvent(
             "view_cart"

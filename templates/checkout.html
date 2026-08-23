@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+
+    <meta charset="UTF-8">
 
     <title>ShopEasy - Checkout</title>
 
@@ -15,497 +17,1090 @@
         }
 
         body {
-
             margin: 0;
-
             font-family: Arial, sans-serif;
-
             background: #f4f6f8;
-
             color: #111827;
         }
 
         header {
-
             background: #111827;
-
             color: white;
-
             padding: 18px 40px;
-
             display: flex;
-
             justify-content: space-between;
-
             align-items: center;
         }
 
         header h2 {
-
             margin: 0;
         }
 
         header a {
-
             color: white;
-
             text-decoration: none;
-
             margin-left: 20px;
         }
 
         .container {
-
             max-width: 1000px;
-
             margin: 40px auto;
-
             padding: 20px;
         }
 
         .box {
-
             background: white;
-
             padding: 30px;
-
             border-radius: 15px;
-
             box-shadow:
                 0 5px 20px
                 rgba(0,0,0,0.08);
         }
 
         h1 {
-
             margin-top: 0;
         }
 
         .item {
-
             display: flex;
-
             justify-content: space-between;
-
             padding: 15px 0;
-
             border-bottom:
                 1px solid #e5e7eb;
         }
 
         .total {
-
             display: flex;
-
             justify-content: space-between;
-
             font-size: 22px;
-
             font-weight: bold;
-
             margin-top: 25px;
+            margin-bottom: 35px;
         }
 
         .form-group {
-
             margin-top: 20px;
         }
 
         label {
-
             display: block;
-
             font-weight: bold;
-
             margin-bottom: 7px;
         }
 
         input {
-
             width: 100%;
-
             padding: 12px;
-
             border: 1px solid #d1d5db;
-
             border-radius: 7px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
         }
 
         .place-order {
-
             width: 100%;
-
             padding: 15px;
-
             margin-top: 30px;
-
             background: #111827;
-
             color: white;
-
             border: none;
-
             border-radius: 8px;
-
             font-size: 17px;
-
             font-weight: bold;
-
             cursor: pointer;
         }
 
         .place-order:hover {
-
             background: #1f2937;
+        }
+
+        .place-order:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .empty-cart {
+            padding: 25px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .success-message {
+            margin-top: 20px;
+            padding: 15px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 8px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+
+            header {
+                padding: 15px 20px;
+            }
+
+            header h2 {
+                font-size: 20px;
+            }
+
+            header a {
+                margin-left: 10px;
+                font-size: 14px;
+            }
+
+            .container {
+                margin: 20px auto;
+                padding: 12px;
+            }
+
+            .box {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .item {
+                font-size: 14px;
+            }
+
+            .total {
+                font-size: 20px;
+            }
+
         }
 
     </style>
 
 </head>
 
+
 <body>
 
+    <!--
+        IMPORTANT:
+        We do NOT use:
 
-<header>
+        {% if user and user.user_id %}
 
-    <h2>ShopEasy</h2>
+        inside JavaScript.
 
-    <div>
-
-        <a href="/shop">
-            Home
-        </a>
-
-        <a href="/settings">
-            Settings
-        </a>
-
-    </div>
-
-</header>
+        The user ID is handled safely through
+        localStorage.
+    -->
 
 
-<div class="container">
-
-    <div class="box">
-
-        <h1>
-            Checkout
-        </h1>
-
-        <p>
-            Review your order and complete your purchase.
-        </p>
-
-
-        <div id="cartItems"></div>
-
-
-        <div class="total">
-
-            <span>
-                Total
-            </span>
-
-            <span id="totalAmount">
-                ₹0
-            </span>
-
-        </div>
-
+    <header>
 
         <h2>
-            Delivery Details
+            ShopEasy
         </h2>
 
+        <div>
 
-        <div class="form-group">
+            <a href="/shop">
+                Home
+            </a>
 
-            <label>
-                Full Name
-            </label>
-
-            <input
-                type="text"
-                id="customerName"
-                value="{{ user.full_name }}"
-            >
+            <a href="/settings">
+                Settings
+            </a>
 
         </div>
 
+    </header>
 
-        <div class="form-group">
 
-            <label>
-                Phone Number
-            </label>
+    <div class="container">
 
-            <input
-                type="text"
-                id="customerPhone"
-                value="{{ user.phone }}"
+        <div class="box">
+
+            <h1>
+                Checkout
+            </h1>
+
+            <p>
+                Review your order and complete your purchase.
+            </p>
+
+
+            <!-- CART -->
+
+            <div id="cartItems">
+
+                Loading cart...
+
+            </div>
+
+
+            <!-- TOTAL -->
+
+            <div class="total">
+
+                <span>
+                    Total
+                </span>
+
+                <span id="totalAmount">
+                    ₹0
+                </span>
+
+            </div>
+
+
+            <!-- DELIVERY -->
+
+            <h2>
+                Delivery Details
+            </h2>
+
+
+            <div class="form-group">
+
+                <label for="customerName">
+                    Full Name
+                </label>
+
+                <input
+                    type="text"
+                    id="customerName"
+                    placeholder="Enter your full name"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="customerPhone">
+                    Phone Number
+                </label>
+
+                <input
+                    type="text"
+                    id="customerPhone"
+                    placeholder="Enter your phone number"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="address">
+                    Delivery Address
+                </label>
+
+                <input
+                    type="text"
+                    id="address"
+                    placeholder="Enter delivery address"
+                >
+
+            </div>
+
+
+            <button
+                id="placeOrderButton"
+                class="place-order"
+                onclick="placeOrder()"
             >
+                Place Order
+            </button>
+
+
+            <div
+                id="successMessage"
+                class="success-message"
+            >
+                Order placed successfully!
+            </div>
 
         </div>
-
-
-        <div class="form-group">
-
-            <label>
-                Delivery Address
-            </label>
-
-            <input
-                type="text"
-                id="address"
-                placeholder="Enter delivery address"
-            >
-
-        </div>
-
-
-        <button
-            class="place-order"
-            onclick="placeOrder()"
-        >
-            Place Order
-        </button>
 
     </div>
-
-</div>
 
 
 <script>
 
-    // ========================================================
-    // GET CART
-    // ========================================================
 
-    let cart =
+// ============================================================
+// SHOPFLOW CHECKOUT
+// ============================================================
+
+
+// ============================================================
+// GET USER ID
+// ============================================================
+
+function getUserId() {
+
+    let userId =
+        localStorage.getItem(
+            "shopflow_user_id"
+        );
+
+
+    /*
+     * If there is no user ID yet,
+     * create a LIVE user ID.
+     */
+
+    if (!userId) {
+
+        userId =
+            "LIVE_" +
+            Math.random()
+                .toString(36)
+                .substring(2, 10)
+                .toUpperCase();
+
+        localStorage.setItem(
+            "shopflow_user_id",
+            userId
+        );
+
+    }
+
+
+    console.log(
+        "ShopFlow User ID:",
+        userId
+    );
+
+
+    return userId;
+
+}
+
+
+// ============================================================
+// GET DEVICE
+// ============================================================
+
+function getDevice() {
+
+    const width =
+        window.innerWidth;
+
+
+    if (width <= 600) {
+
+        return "mobile";
+
+    }
+
+
+    if (width <= 1000) {
+
+        return "tablet";
+
+    }
+
+
+    return "desktop";
+
+}
+
+
+// ============================================================
+// GET CART
+// ============================================================
+
+let cart = [];
+
+try {
+
+    cart =
         JSON.parse(
             localStorage.getItem(
                 "shopflow_cart"
             )
         ) || [];
 
+}
+catch (error) {
 
-    // ========================================================
-    // DISPLAY CART
-    // ========================================================
+    console.error(
+        "Cart read error:",
+        error
+    );
 
-    function displayCart() {
+    cart = [];
 
-        const container =
-            document.getElementById(
-                "cartItems"
-            );
-
-        const totalElement =
-            document.getElementById(
-                "totalAmount"
-            );
+}
 
 
-        if (cart.length === 0) {
+// ============================================================
+// DISPLAY CART
+// ============================================================
 
-            container.innerHTML =
-                "<p>Your cart is empty.</p>";
+function displayCart() {
 
-            totalElement.innerText =
-                "₹0";
-
-            return;
-        }
-
-
-        let total = 0;
-
-        let html = "";
-
-
-        cart.forEach(
-            function(item) {
-
-                total +=
-                    Number(item.price);
-
-
-                html += `
-
-                    <div class="item">
-
-                        <span>
-                            ${item.productName}
-                        </span>
-
-                        <strong>
-                            ₹${item.price}
-                        </strong>
-
-                    </div>
-
-                `;
-            }
+    const container =
+        document.getElementById(
+            "cartItems"
         );
 
 
-        container.innerHTML =
-            html;
+    const totalElement =
+        document.getElementById(
+            "totalAmount"
+        );
 
 
-        totalElement.innerText =
-            "₹" + total;
+    if (!container || !totalElement) {
+
+        console.error(
+            "Cart elements not found."
+        );
+
+        return;
+
     }
 
 
-    // ========================================================
-    // PLACE ORDER
-    // ========================================================
+    // --------------------------------------------------------
+    // EMPTY CART
+    // --------------------------------------------------------
 
-    async function placeOrder() {
+    if (
+        !Array.isArray(cart) ||
+        cart.length === 0
+    ) {
 
-        const address =
-            document.getElementById(
-                "address"
-            ).value.trim();
+        container.innerHTML = `
+            <div class="empty-cart">
+                <p>Your cart is empty.</p>
+
+                <a href="/shop">
+                    Continue Shopping
+                </a>
+            </div>
+        `;
+
+        totalElement.innerText =
+            "₹0";
+
+        return;
+
+    }
 
 
-        if (!address) {
+    // --------------------------------------------------------
+    // CALCULATE TOTAL
+    // --------------------------------------------------------
 
-            alert(
-                "Please enter your delivery address."
-            );
+    let total = 0;
 
-            return;
+    let html = "";
+
+
+    cart.forEach(
+        function(item) {
+
+            const price =
+                Number(
+                    item.price
+                ) || 0;
+
+
+            total += price;
+
+
+            const productName =
+                item.productName ||
+                item.product_name ||
+                item.name ||
+                "Product";
+
+
+            html += `
+
+                <div class="item">
+
+                    <span>
+                        ${productName}
+                    </span>
+
+                    <strong>
+                        ₹${price.toLocaleString("en-IN")}
+                    </strong>
+
+                </div>
+
+            `;
+
         }
+    );
 
 
-        if (cart.length === 0) {
-
-            alert(
-                "Your cart is empty."
-            );
-
-            window.location.href =
-                "/shop";
-
-            return;
-        }
+    container.innerHTML =
+        html;
 
 
-        // ---------------------------------------------
-        // TRACK PURCHASE
-        // ---------------------------------------------
+    totalElement.innerText =
+        "₹" +
+        total.toLocaleString("en-IN");
 
-        try {
+}
 
+
+// ============================================================
+// SEND EVENT TO FLASK
+// ============================================================
+
+async function sendEvent(
+    eventType,
+    productId = null
+) {
+
+    const userId =
+        getUserId();
+
+
+    const eventData = {
+
+        user_id:
+            userId,
+
+        event_type:
+            eventType,
+
+        device:
+            getDevice(),
+
+        location:
+            "India",
+
+        traffic_source:
+            "direct",
+
+        product_id:
+            productId
+
+    };
+
+
+    console.log(
+        "Sending ShopFlow event:",
+        eventData
+    );
+
+
+    try {
+
+        const response =
             await fetch(
                 "/track-event",
                 {
 
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
+
                         "Content-Type":
+                            "application/json",
+
+                        "Accept":
                             "application/json"
+
                     },
 
-                    body: JSON.stringify({
-
-                        user_id:
-                            localStorage.getItem(
-                                "shopflow_user_id"
-                            ) || "USER_SESSION",
-
-                        event_type:
-                            "purchase",
-
-                        device:
-                            getDevice(),
-
-                        location:
-                            "India",
-
-                        traffic_source:
-                            "organic_search",
-
-                        product_id:
-                            cart[0].productId
-
-                    })
+                    body:
+                        JSON.stringify(
+                            eventData
+                        )
 
                 }
             );
 
-        }
 
-        catch(error) {
+        const result =
+            await response
+                .json()
+                .catch(
+                    function() {
 
-            console.error(
-                "Purchase tracking error:",
-                error
-            );
+                        return {};
 
-        }
+                    }
+                );
 
 
-        // ---------------------------------------------
-        // SUCCESS
-        // ---------------------------------------------
-
-        alert(
-            "🎉 Order placed successfully!"
+        console.log(
+            "Event response:",
+            response.status,
+            result
         );
 
 
-        // Clear cart
+        if (!response.ok) {
+
+            console.error(
+                "Event failed:",
+                eventData
+            );
+
+            return false;
+
+        }
+
+
+        return true;
+
+    }
+    catch (error) {
+
+        console.error(
+            "Event tracking error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+// ============================================================
+// TRACK CHECKOUT PAGE
+// ============================================================
+
+async function trackCheckout() {
+
+    if (
+        !Array.isArray(cart) ||
+        cart.length === 0
+    ) {
+
+        console.log(
+            "Cart empty - checkout event not sent."
+        );
+
+        return;
+
+    }
+
+
+    const product =
+        cart[0];
+
+
+    const productId =
+        product.productId ||
+        product.product_id ||
+        product.id ||
+        "PRODUCT_001";
+
+
+    console.log(
+        "Tracking checkout:",
+        productId
+    );
+
+
+    await sendEvent(
+        "checkout",
+        productId
+    );
+
+}
+
+
+// ============================================================
+// PLACE ORDER
+// ============================================================
+
+async function placeOrder() {
+
+    const button =
+        document.getElementById(
+            "placeOrderButton"
+        );
+
+
+    const addressElement =
+        document.getElementById(
+            "address"
+        );
+
+
+    const nameElement =
+        document.getElementById(
+            "customerName"
+        );
+
+
+    const phoneElement =
+        document.getElementById(
+            "customerPhone"
+        );
+
+
+    const address =
+        addressElement
+            ? addressElement.value.trim()
+            : "";
+
+
+    const customerName =
+        nameElement
+            ? nameElement.value.trim()
+            : "";
+
+
+    const customerPhone =
+        phoneElement
+            ? phoneElement.value.trim()
+            : "";
+
+
+    // --------------------------------------------------------
+    // VALIDATE ADDRESS
+    // --------------------------------------------------------
+
+    if (!address) {
+
+        alert(
+            "Please enter your delivery address."
+        );
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // VALIDATE CART
+    // --------------------------------------------------------
+
+    if (
+        !Array.isArray(cart) ||
+        cart.length === 0
+    ) {
+
+        alert(
+            "Your cart is empty."
+        );
+
+
+        window.location.href =
+            "/shop";
+
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // USER
+    // --------------------------------------------------------
+
+    const userId =
+        getUserId();
+
+
+    // --------------------------------------------------------
+    // DEVICE
+    // --------------------------------------------------------
+
+    const device =
+        getDevice();
+
+
+    // --------------------------------------------------------
+    // PRODUCT
+    // --------------------------------------------------------
+
+    const product =
+        cart[0];
+
+
+    const productId =
+        product.productId ||
+        product.product_id ||
+        product.id ||
+        "PRODUCT_001";
+
+
+    // --------------------------------------------------------
+    // DISABLE BUTTON
+    // --------------------------------------------------------
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.innerText =
+            "Processing...";
+
+    }
+
+
+    // --------------------------------------------------------
+    // PURCHASE DATA
+    // --------------------------------------------------------
+
+    const purchaseData = {
+
+        user_id:
+            userId,
+
+        event_type:
+            "purchase",
+
+        device:
+            device,
+
+        location:
+            "India",
+
+        traffic_source:
+            "direct",
+
+        product_id:
+            productId
+
+    };
+
+
+    console.log(
+        "Sending purchase event:",
+        purchaseData
+    );
+
+
+    // --------------------------------------------------------
+    // SEND PURCHASE
+    // --------------------------------------------------------
+
+    try {
+
+        const response =
+            await fetch(
+                "/track-event",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            purchaseData
+                        )
+
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // READ RESPONSE
+        // ----------------------------------------------------
+
+        const result =
+            await response
+                .json()
+                .catch(
+                    function() {
+
+                        return {};
+
+                    }
+                );
+
+
+        console.log(
+            "Purchase tracking response:",
+            response.status,
+            result
+        );
+
+
+        // ----------------------------------------------------
+        // CHECK SUCCESS
+        // ----------------------------------------------------
+
+        if (!response.ok) {
+
+            console.error(
+                "Purchase event failed:",
+                result
+            );
+
+
+            alert(
+                "Purchase could not be recorded in analytics.\n\nPlease try again."
+            );
+
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+                button.innerText =
+                    "Place Order";
+
+            }
+
+
+            return;
+
+        }
+
+
+        // ----------------------------------------------------
+        // PURCHASE SUCCESS
+        // ----------------------------------------------------
+
+        console.log(
+            "PURCHASE EVENT SUCCESSFULLY RECORDED"
+        );
+
+
+        // ----------------------------------------------------
+        // CLEAR CART
+        // ----------------------------------------------------
 
         localStorage.removeItem(
             "shopflow_cart"
         );
 
 
-        // Go back home
-
-        window.location.href =
-            "/shop";
-    }
+        cart = [];
 
 
-    // ========================================================
-    // DEVICE
-    // ========================================================
+        // ----------------------------------------------------
+        // SHOW SUCCESS
+        // ----------------------------------------------------
 
-    function getDevice() {
+        const successMessage =
+            document.getElementById(
+                "successMessage"
+            );
 
-        const width =
-            window.innerWidth;
 
+        if (successMessage) {
 
-        if (width <= 600) {
+            successMessage.style.display =
+                "block";
 
-            return "mobile";
         }
 
 
-        if (width <= 1000) {
+        alert(
+            "🎉 Order placed successfully!"
+        );
 
-            return "tablet";
-        }
 
+        // ----------------------------------------------------
+        // RETURN TO SHOP
+        // ----------------------------------------------------
 
-        return "desktop";
+        setTimeout(
+            function() {
+
+                window.location.href =
+                    "/shop";
+
+            },
+            500
+        );
+
     }
 
 
-    // ========================================================
-    // LOAD
-    // ========================================================
+    catch(error) {
 
-    displayCart();
+        console.error(
+            "Purchase tracking error:",
+            error
+        );
+
+
+        alert(
+            "Unable to connect to ShopFlow analytics.\n\nPlease try again."
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.innerText =
+                "Place Order";
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// PAGE LOAD
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async function() {
+
+        console.log(
+            "ShopFlow checkout page loaded."
+        );
+
+
+        // Create/get user ID
+        const userId =
+            getUserId();
+
+
+        console.log(
+            "Current checkout user:",
+            userId
+        );
+
+
+        // Display cart
+        displayCart();
+
+
+        // Track checkout
+        await trackCheckout();
+
+
+        console.log(
+            "Checkout page initialization complete."
+        );
+
+    }
+);
+
 
 </script>
+
 
 </body>
 

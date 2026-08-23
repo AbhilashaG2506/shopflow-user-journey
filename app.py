@@ -150,13 +150,34 @@ def init_database():
 # INITIALIZE DATABASE ON IMPORT
 # IMPORTANT FOR RENDER / GUNICORN
 # ============================================================
-try:
+:
+    try:
     init_database()
-    print("ShopFlow database initialized successfully.")
+
+    # Verify that the events table actually exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT name
+        FROM sqlite_master
+        WHERE type='table'
+        AND name='events'
+    """)
+
+    events_table = cursor.fetchone()
+
+    conn.close()
+
+    if events_table:
+        print("ShopFlow database initialized successfully.")
+        print("events table exists.")
+    else:
+        print("ERROR: events table was NOT created.")
+
 except Exception as e:
     print("WARNING: Database initialization failed.")
     print("Reason:", e)
-
 
 # ============================================================
 # LOAD RANDOM FOREST MODEL
