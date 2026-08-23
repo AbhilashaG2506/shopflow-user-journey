@@ -2338,114 +2338,102 @@ function renderInsights(prediction){
    LIVE EVENTS
 ========================================================= */
 
-function renderLiveEvents(events){
+function renderLiveEvents(events) {
 
-    const table =
-        document.getElementById(
-            "eventsTable"
-        );
+    const table = document.getElementById("eventsTable");
 
+    if (!table) {
+        return;
+    }
 
-    if(!events.length){
+    if (!Array.isArray(events) || events.length === 0) {
 
         table.innerHTML = `
-
             <tr>
-
-                <td
-                    colspan="7"
-                    class="loading">
-
+                <td colspan="7" class="loading">
                     No events available.
-
                 </td>
-
             </tr>
-
         `;
 
         return;
-
     }
 
+    // Always show newest event first.
+    const latestEvents = [...events]
+        .sort(function(a, b) {
 
-    table.innerHTML =
-        events.map(
-            event => `
+            const idA = Number(a.id || 0);
+            const idB = Number(b.id || 0);
 
-                <tr>
+            if (idA !== idB) {
+                return idB - idA;
+            }
 
-                    <td>
+            const timeA =
+                new Date(a.timestamp || 0).getTime();
 
+            const timeB =
+                new Date(b.timestamp || 0).getTime();
+
+            return timeB - timeA;
+        })
+        .slice(0, 20);
+
+
+    table.innerHTML = latestEvents.map(function(event) {
+
+        return `
+            <tr>
+
+                <td>
+                    ${escapeHTML(
+                        event.user_id || "—"
+                    )}
+                </td>
+
+                <td>
+                    <span class="event-pill">
                         ${escapeHTML(
-                            event.user_id || "—"
+                            event.event_type || "—"
                         )}
+                    </span>
+                </td>
 
-                    </td>
+                <td>
+                    ${escapeHTML(
+                        event.product_id || "—"
+                    )}
+                </td>
 
+                <td>
+                    ${escapeHTML(
+                        event.device || "—"
+                    )}
+                </td>
 
-                    <td>
+                <td>
+                    ${escapeHTML(
+                        event.location || "—"
+                    )}
+                </td>
 
-                        <span class="event-pill">
+                <td>
+                    ${escapeHTML(
+                        event.traffic_source || "—"
+                    )}
+                </td>
 
-                            ${escapeHTML(
-                                event.event_type || "—"
-                            )}
+                <td>
+                    ${formatDate(
+                        event.timestamp
+                    )}
+                </td>
 
-                        </span>
+            </tr>
+        `;
 
-                    </td>
-
-
-                    <td>
-
-                        ${escapeHTML(
-                            event.product_id || "—"
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${escapeHTML(
-                            event.device || "—"
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${escapeHTML(
-                            event.location || "—"
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${escapeHTML(
-                            event.traffic_source || "—"
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${formatDate(
-                            event.timestamp
-                        )}
-
-                    </td>
-
-                </tr>
-
-            `
-        ).join("");
-
+    }).join("");
 }
 
 
@@ -2560,11 +2548,44 @@ loadDashboard();
 
 /* Refresh every 5 seconds */
 
-setInterval(
-    loadDashboard,
-    5000
-);
+/* =========================================================
+   REAL-TIME REFRESH
+========================================================= */
 
+let dashboardRefreshing = false;
+
+async function refreshDashboardSafely() {
+
+    if (dashboardRefreshing) {
+        return;
+    }
+
+    dashboardRefreshing = true;
+
+    try {
+        await loadDashboard();
+    }
+    catch (error) {
+        console.error(
+            "Live dashboard refresh error:",
+            error
+        );
+    }
+    finally {
+        dashboardRefreshing = false;
+    }
+}
+
+
+/* Initial load */
+refreshDashboardSafely();
+
+
+/* Refresh every 2 seconds */
+setInterval(
+    refreshDashboardSafely,
+    2000
+);
 </script>
 
 
