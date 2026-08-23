@@ -3,761 +3,166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShopFlow Analytics Dashboard</title>
-
+<title>ShopFlow Analytics</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{
-    font-family:Arial,Helvetica,sans-serif;
-    background:#050b16;
-    color:#e5edf7;
-}
-button{font:inherit}
-.sidebar{
-    position:fixed;left:0;top:0;bottom:0;width:230px;
-    background:#07111f;border-right:1px solid #17263a;
-    padding:25px 14px;z-index:100;
-}
-.logo{font-size:22px;font-weight:700;padding:0 10px}
-.logo span{color:#22d3ee}
-.subtitle{font-size:11px;color:#71839b;margin:7px 10px 30px}
-.nav-title{
-    color:#64748b;font-size:10px;letter-spacing:1.5px;
-    margin:20px 10px 9px
-}
-.nav a{
-    display:flex;align-items:center;gap:11px;
-    text-decoration:none;color:#91a4bb;
-    padding:11px 12px;border-radius:9px;margin-bottom:4px;
-    font-size:13px;cursor:pointer;transition:.2s
-}
-.nav a:hover{background:#0e1d31;color:#e5edf7}
-.nav a.active{background:#1264d8;color:#fff}
-.nav-icon{width:20px;text-align:center}
-.main{margin-left:230px;min-height:100vh}
-.header{
-    height:72px;padding:0 28px;background:#07111f;
-    border-bottom:1px solid #17263a;display:flex;
-    align-items:center;justify-content:space-between
-}
-.header-title{font-size:20px;font-weight:700}
-.header-subtitle{font-size:12px;color:#71839b;margin-top:4px}
-.header-right{display:flex;align-items:center;gap:18px}
-.clock{font-size:12px;color:#9fb1c7}
-.status{display:flex;align-items:center;gap:8px;font-size:12px;color:#9fb1c7}
-.status-dot{
-    width:8px;height:8px;border-radius:50%;background:#22c55e;
-    box-shadow:0 0 8px #22c55e
-}
-.content{padding:28px 28px 55px}
-.page{display:none}
-.page.active{display:block}
-.page-head{
-    display:flex;justify-content:space-between;align-items:flex-end;
-    gap:15px;margin-bottom:20px
-}
-.page-head h1{font-size:24px}
-.page-head p{font-size:12px;color:#71839b;margin-top:6px}
-.toolbar{display:flex;gap:9px;align-items:center}
-.btn{
-    border:1px solid #23415f;background:#0a1a2d;color:#cfe4fb;
-    border-radius:8px;padding:9px 13px;cursor:pointer
-}
-.btn:hover{background:#102945}
-.btn.primary{background:#1769e8;border-color:#1769e8;color:#fff}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-.card,.panel{
-    background:#0a1524;border:1px solid #17263a;border-radius:12px
-}
-.card{padding:19px}
-.card-title{color:#71839b;font-size:11px;margin-bottom:11px}
-.card-value{font-size:28px;font-weight:700}
-.blue{color:#38bdf8}.cyan{color:#22d3ee}.green{color:#22c55e}.red{color:#ef4444}
-.grid-main{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.panel{overflow:hidden}
-.panel-header{
-    padding:18px 20px;border-bottom:1px solid #17263a;
-    display:flex;justify-content:space-between;align-items:center
-}
-.panel-title{font-size:16px;font-weight:700}
-.note{font-size:11px;color:#71839b;margin-top:5px}
-.panel-body{padding:20px}
-.live-badge{color:#22c55e;font-size:11px}
-.funnel-stage{margin-bottom:18px}
-.funnel-row{display:flex;align-items:center;gap:12px}
-.funnel-label{width:100px;font-size:12px;font-weight:600}
-.funnel-bar-container{
-    flex:1;height:30px;background:#111d2d;border-radius:7px;overflow:hidden
-}
-.funnel-bar{
-    height:100%;background:linear-gradient(90deg,#2563eb,#06b6d4);
-    border-radius:7px;display:flex;align-items:center;padding-left:9px;
-    color:#fff;font-size:11px;font-weight:600;min-width:34px;
-    transition:width .5s
-}
-.funnel-number{width:55px;text-align:right;font-size:12px;font-weight:600}
-.funnel-details{
-    margin-left:112px;margin-top:6px;display:flex;gap:20px;
-    color:#64748b;font-size:10px
-}
-.prediction-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.prediction-card{
-    background:#07111f;border:1px solid #17263a;border-radius:10px;padding:16px
-}
-.prediction-label{color:#71839b;font-size:10px;margin-bottom:8px}
-.prediction-value{font-size:23px;font-weight:700}
-.progress{height:7px;background:#182536;border-radius:8px;overflow:hidden;margin-top:10px}
-.progress-bar{height:100%;border-radius:8px;transition:width .5s}
-.progress-green{background:#22c55e}.progress-red{background:#ef4444}
-.risk-low{color:#22c55e}.risk-medium{color:#f59e0b}.risk-high{color:#ef4444}
-.recommendation{
-    margin-top:14px;padding:15px;background:#07111f;
-    border:1px solid #17263a;border-radius:9px
-}
-.recommendation-title{
-    color:#22d3ee;font-size:10px;letter-spacing:1px;
-    text-transform:uppercase;margin-bottom:7px
-}
-.recommendation-text{color:#b7c5d6;font-size:12px;line-height:1.6}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th{
-    color:#71839b;font-size:10px;text-align:left;padding:11px;
-    border-bottom:1px solid #17263a
-}
-td{
-    color:#c5d2e2;font-size:11px;padding:11px;
-    border-bottom:1px solid #111d2d
-}
-.event-pill{
-    display:inline-block;padding:4px 8px;border-radius:12px;
-    background:#0d2a48;color:#38bdf8;font-size:9px
-}
-.event-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.event-card{
-    padding:15px;border:1px solid #17263a;background:#07111f;border-radius:9px
-}
-.event-name{color:#64748b;font-size:9px;margin-bottom:7px}
-.event-count{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.reason{margin-bottom:15px}
-.reason:last-child{margin-bottom:0}
-.reason-top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px}
-.reason-bar{height:6px;background:#17263a;border-radius:8px;overflow:hidden}
-.reason-fill{height:100%;border-radius:8px;background:#2780ff}
-.reason:nth-child(2) .reason-fill{background:#a855f7}
-.reason:nth-child(3) .reason-fill{background:#f59e0b}
-.reason:nth-child(4) .reason-fill{background:#22c55e}
-.reason:nth-child(5) .reason-fill{background:#22d3ee}
-.model-status{
-    padding:14px 16px;border:1px solid #14532d;background:#09251b;
-    border-radius:9px;color:#22c55e;font-size:12px;margin-bottom:15px
-}
-.model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.model-card,.dataset-card{
-    background:#07111f;border:1px solid #17263a;border-radius:9px;padding:15px
-}
-.model-card small,.dataset-card small{
-    display:block;color:#64748b;font-size:9px;margin-bottom:7px;letter-spacing:.5px
-}
-.model-card strong{font-size:13px;color:#dbeafe}
-.dataset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-.dataset-card strong{font-size:24px;color:#38bdf8}
-.dataset-highlight{
-    margin-bottom:16px;padding:18px;border-radius:10px;
-    background:#071b31;border:1px solid #164b7a
-}
-.dataset-highlight .big{font-size:32px;font-weight:700;color:#38bdf8}
-.dataset-highlight .small{font-size:11px;color:#71839b;margin-top:5px}
-.empty{color:#64748b;padding:18px;text-align:center;font-size:12px}
-.footer{text-align:center;padding:28px;color:#52647a;font-size:10px;border-top:1px solid #17263a;margin-top:25px}
-.hide{display:none!important}
-
-@media(max-width:1100px){
-    .cards{grid-template-columns:repeat(2,1fr)}
-    .grid-main,.grid-2{grid-template-columns:1fr}
-    .event-grid,.model-grid,.dataset-grid{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:800px){
-    .sidebar{width:68px;padding:20px 8px}
-    .logo span,.subtitle,.nav-title,.nav span{display:none}
-    .logo{font-size:0}.logo:before{content:"SF";font-size:20px;color:#22d3ee}
-    .nav a{justify-content:center}
-    .main{margin-left:68px}
-    .header{padding:0 16px}
-    .content{padding:20px 15px}
-    .clock{display:none}
-}
-@media(max-width:550px){
-    .cards,.event-grid,.model-grid,.dataset-grid,.prediction-grid{grid-template-columns:1fr}
-    .page-head{align-items:flex-start;flex-direction:column}
-    .funnel-label{width:80px;font-size:10px}
-    .funnel-details{margin-left:92px}
-}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{font-family:Arial,Helvetica,sans-serif;background:#050b16;color:#e5edf7}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:245px;background:#07111f;border-right:1px solid #17263a;padding:28px 18px;z-index:10}
+.logo{font-size:21px;font-weight:700}.logo span{color:#22d3ee}.subtitle{font-size:11px;color:#71839b;margin:7px 0 35px}
+.nav-title{font-size:10px;color:#64748b;letter-spacing:1.5px;margin:20px 10px 10px}.nav a{display:flex;gap:12px;align-items:center;text-decoration:none;color:#91a4bb;padding:12px 13px;border-radius:8px;margin-bottom:5px;font-size:13px}.nav a:hover,.nav a.active{background:#0d2a48;color:#38bdf8}.nav-icon{width:20px;text-align:center}
+.main{margin-left:245px;min-height:100vh}.header{height:75px;padding:0 35px;background:#07111f;border-bottom:1px solid #17263a;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}.header-title{font-size:20px;font-weight:700}.header-subtitle{font-size:12px;color:#71839b;margin-top:4px}.status{font-size:12px;color:#9fb1c7;display:flex;gap:8px;align-items:center}.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e}
+.content{padding:30px 35px 60px}.section{margin-bottom:35px;scroll-margin-top:95px}.section-label{font-size:11px;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card,.panel{background:#0a1524;border:1px solid #17263a;border-radius:12px}.card{padding:20px}.card-title{color:#71839b;font-size:12px;margin-bottom:13px}.card-value{font-size:29px;font-weight:700}.blue{color:#38bdf8}.cyan{color:#22d3ee}.green{color:#22c55e}.red{color:#ef4444}.orange{color:#f59e0b}
+.panel{overflow:hidden}.panel-header{padding:20px 22px;border-bottom:1px solid #17263a;display:flex;justify-content:space-between;align-items:center}.panel-title{font-size:17px;font-weight:700}.note{color:#71839b;font-size:11px;margin-top:5px}.panel-body{padding:22px}.live{color:#22c55e;font-size:11px}
+.grid2{display:grid;grid-template-columns:1.25fr .9fr;gap:18px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.pred{background:#07111f;border:1px solid #17263a;border-radius:10px;padding:16px}.pred small,.metric small{display:block;color:#71839b;font-size:10px;margin-bottom:7px}.pred strong,.metric strong{font-size:22px}.progress{height:7px;background:#182536;border-radius:10px;overflow:hidden;margin-top:10px}.pg{height:100%;border-radius:10px}.pg-green{background:#22c55e}.pg-red{background:#ef4444}
+.funnel-stage{margin-bottom:20px}.funnel-row{display:flex;align-items:center;gap:14px}.funnel-label{width:110px;font-size:13px;font-weight:600}.funnel-bar-container{flex:1;height:30px;background:#111d2d;border-radius:7px;overflow:hidden}.funnel-bar{height:100%;min-width:3px;background:linear-gradient(90deg,#2563eb,#06b6d4);border-radius:7px;padding-left:10px;display:flex;align-items:center;color:white;font-size:11px;font-weight:600}.funnel-number{width:70px;text-align:right;font-size:13px;font-weight:600}.funnel-details{margin-left:124px;margin-top:6px;display:flex;gap:20px;color:#64748b;font-size:10px}
+.table-wrap{overflow:auto;max-height:600px}.table-wrap table{width:100%;border-collapse:collapse}.table-wrap th{color:#71839b;font-size:10px;text-align:left;padding:12px;border-bottom:1px solid #17263a;white-space:nowrap;position:sticky;top:0;background:#0a1524}.table-wrap td{color:#c5d2e2;font-size:11px;padding:11px 12px;border-bottom:1px solid #111d2d;white-space:nowrap}.pill{display:inline-block;padding:5px 9px;border-radius:12px;background:#0d2a48;color:#38bdf8;font-size:10px}
+.metric{background:#07111f;border:1px solid #17263a;border-radius:9px;padding:15px}.metric strong{font-size:19px}.metric small{margin-bottom:6px}
+.analysis-table{width:100%;border-collapse:collapse}.analysis-table th,.analysis-table td{text-align:left;padding:10px;border-bottom:1px solid #17263a;font-size:11px}.analysis-table th{color:#71839b}.analysis-table td{color:#c5d2e2}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.btn{border:1px solid #1d4f7a;background:#0d2a48;color:#dbeafe;border-radius:8px;padding:10px 14px;cursor:pointer}.btn:hover{background:#12385c}
+.loading{padding:20px;color:#64748b}.muted{color:#71839b;font-size:11px}.error{color:#f87171;padding:12px;background:#2a1116;border:1px solid #5b2028;border-radius:8px;margin-bottom:12px}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.grid3,.grid4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.sidebar{width:70px;padding:20px 10px}.logo,.subtitle,.nav-title,.nav span{display:none}.nav a{justify-content:center}.main{margin-left:70px}.content{padding:22px 18px}.header{padding:0 18px}}
+@media(max-width:550px){.cards,.grid3,.grid4{grid-template-columns:1fr}}
 </style>
 </head>
-
 <body>
-
 <aside class="sidebar">
-    <div class="logo">ShopFlow <span>Analytics</span></div>
-    <div class="subtitle">User Journey Intelligence</div>
-
-    <div class="nav-title">ANALYTICS</div>
-    <nav class="nav">
-        <a href="#overview" data-page="overview" class="active"><div class="nav-icon">▦</div><span>Overview</span></a>
-        <a href="#live" data-page="live"><div class="nav-icon">◉</div><span>Live User Journey</span></a>
-        <a href="#funnel" data-page="funnel"><div class="nav-icon">▽</div><span>Funnel Analysis</span></a>
-        <a href="#dropoff" data-page="dropoff"><div class="nav-icon">⚠</div><span>Drop-off Prediction</span></a>
-        <a href="#insights" data-page="insights"><div class="nav-icon">◈</div><span>User Insights</span></a>
-        <a href="#model" data-page="model"><div class="nav-icon">◆</div><span>Model Performance</span></a>
-        <a href="#dataset" data-page="dataset"><div class="nav-icon">◫</div><span>E-commerce Dataset</span></a>
-    </nav>
+<div class="logo">ShopFlow <span>Analytics</span></div>
+<div class="subtitle">User Journey Intelligence</div>
+<div class="nav-title">ANALYTICS</div>
+<nav class="nav">
+<a href="#overview" class="active"><div class="nav-icon">▦</div><span>Overview</span></a>
+<a href="#live"><div class="nav-icon">◉</div><span>Live User Journey</span></a>
+<a href="#funnel"><div class="nav-icon">▽</div><span>Funnel Analysis</span></a>
+<a href="#dropoff"><div class="nav-icon">⚠</div><span>Drop-off Prediction</span></a>
+<a href="#insights"><div class="nav-icon">◈</div><span>User Insights</span></a>
+<a href="#model"><div class="nav-icon">◆</div><span>Model Performance</span></a>
+<a href="#ecommerceDataset"><div class="nav-icon">◫</div><span>E-commerce Dataset</span></a>
+</nav>
 </aside>
-
 <main class="main">
 <header class="header">
-    <div>
-        <div class="header-title">ShopFlow Analytics</div>
-        <div class="header-subtitle">Real-time User Journey & Drop-off Analysis</div>
-    </div>
-    <div class="header-right">
-        <div id="liveClock" class="clock">--</div>
-        <div class="status"><div class="status-dot"></div>Live System</div>
-    </div>
+<div><div class="header-title">Real-Time Analytics Dashboard</div><div class="header-subtitle">Monitor user journey, behaviour and ML-powered drop-off prediction in real-time</div></div>
+<div class="status"><div class="status-dot"></div>Live System</div>
 </header>
-
 <div class="content">
 
-<!-- ========================= OVERVIEW ========================= -->
-<section id="page-overview" class="page active">
-    <div class="page-head">
-        <div>
-            <h1>Real-Time Analytics Dashboard <span style="color:#22c55e;font-size:12px">● Live</span></h1>
-            <p>Complete user journey, funnel, ML prediction and system overview</p>
-        </div>
-        <div class="toolbar">
-            <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-            <button class="btn" onclick="loadDashboard()">Last 30 Minutes</button>
-        </div>
-    </div>
-
-    <div class="cards">
-        <div class="card"><div class="card-title">TOTAL EVENTS</div><div id="events" class="card-value blue">0</div></div>
-        <div class="card"><div class="card-title">UNIQUE USERS</div><div id="users" class="card-value cyan">0</div></div>
-        <div class="card"><div class="card-title">PRODUCT VIEWS</div><div id="views" class="card-value">0</div></div>
-        <div class="card"><div class="card-title">PURCHASES</div><div id="purchases" class="card-value green">0</div></div>
-    </div>
-
-    <div class="grid-main">
-        <div class="panel">
-            <div class="panel-header">
-                <div><div class="panel-title">User Journey Funnel</div><div class="note">Visit → Product View → Add to Cart → View Cart → Checkout → Purchase</div></div>
-                <div class="live-badge">● Live</div>
-            </div>
-            <div id="overviewFunnel" class="panel-body"></div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header">
-                <div><div class="panel-title">Drop-off Prediction</div><div class="note">Latest active user</div></div>
-                <div class="live-badge">AI / ML</div>
-            </div>
-            <div class="panel-body">
-                <div id="overviewPrediction"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-2" style="margin-top:16px">
-        <div class="panel">
-            <div class="panel-header">
-                <div><div class="panel-title">Live User Activity</div><div class="note">Latest tracked events</div></div>
-                <div class="live-badge">● Live</div>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>USER ID</th><th>EVENT</th><th>DEVICE</th><th>LOCATION</th><th>TRAFFIC</th><th>TIME</th></tr></thead>
-                    <tbody id="overviewEventsTable"><tr><td colspan="6" class="empty">Waiting for activity...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header"><div><div class="panel-title">Top Drop-off Reasons</div><div class="note">AI-based behavioural signals</div></div></div>
-            <div class="panel-body" id="dropoffReasons"></div>
-        </div>
-    </div>
-
-    <div class="panel" style="margin-top:16px">
-        <div class="panel-header">
-            <div><div class="panel-title">Model Performance & Status</div><div class="note">Random Forest drop-off prediction engine</div></div>
-            <div class="live-badge">ML System</div>
-        </div>
-        <div class="panel-body">
-            <div id="overviewModelStatus" class="model-status">● Checking ML model...</div>
-            <div class="model-grid">
-                <div class="model-card"><small>MODEL</small><strong>Random Forest</strong></div>
-                <div class="model-card"><small>MODEL FILE</small><strong>dropoff_model.pkl</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Purchase Probability</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Drop-off Probability</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Risk Level</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Recommendation & Action</strong></div>
-            </div>
-        </div>
-    </div>
+<section id="overview" class="section">
+<div class="section-label">Overview</div>
+<div class="cards">
+<div class="card"><div class="card-title">Total Events</div><div id="events" class="card-value blue">—</div></div>
+<div class="card"><div class="card-title">Unique Users</div><div id="users" class="card-value cyan">—</div></div>
+<div class="card"><div class="card-title">Product Views</div><div id="views" class="card-value">—</div></div>
+<div class="card"><div class="card-title">Purchases</div><div id="purchases" class="card-value green">—</div></div>
+</div>
 </section>
 
-<!-- ========================= LIVE ========================= -->
-<section id="page-live" class="page">
-    <div class="page-head">
-        <div><h1>Live User Journey</h1><p>Real-time customer events received by ShopFlow</p></div>
-        <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <div><div class="panel-title">Live User Activity</div><div class="note">User ID, event, product, device, location, traffic source and timestamp</div></div>
-            <div class="live-badge">● Live Tracking</div>
-        </div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>USER ID</th><th>EVENT TYPE</th><th>PRODUCT ID</th><th>DEVICE</th><th>LOCATION</th><th>TRAFFIC SOURCE</th><th>TIMESTAMP</th></tr></thead>
-                <tbody id="liveEventsTable"><tr><td colspan="7" class="empty">No recent activity.</td></tr></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="grid-3" style="margin-top:16px">
-        <div class="card"><div class="card-title">SYSTEM STATUS</div><div id="liveSystemStatus" class="card-value" style="font-size:16px">Waiting...</div></div>
-        <div class="card"><div class="card-title">ML PREDICTION STATUS</div><div id="liveMLStatus" class="card-value" style="font-size:16px">Checking...</div></div>
-        <div class="card"><div class="card-title">LATEST USER</div><div id="liveLatestUser" class="card-value" style="font-size:16px">Waiting...</div></div>
-    </div>
+<section class="section">
+<div class="section-label">Main Analytics</div>
+<div class="grid2">
+<div class="panel"><div class="panel-header"><div><div class="panel-title">User Journey Funnel</div><div class="note">Visit → Product View → Add to Cart → View Cart → Checkout → Purchase</div></div><div class="live">● LIVE</div></div><div id="overviewFunnel" class="panel-body"><div class="loading">Loading...</div></div></div>
+<div class="panel"><div class="panel-header"><div><div class="panel-title">Drop-off Prediction</div><div class="note">Latest active user</div></div><div id="predictionSource" class="live">ML</div></div><div class="panel-body grid3">
+<div class="pred"><small>PURCHASE PROBABILITY</small><strong id="purchaseProbability" class="green">—</strong><div class="progress"><div id="purchaseProgress" class="pg pg-green" style="width:0"></div></div></div>
+<div class="pred"><small>DROP-OFF PROBABILITY</small><strong id="dropoffProbability" class="red">—</strong><div class="progress"><div id="dropoffProgress" class="pg pg-red" style="width:0"></div></div></div>
+<div class="pred"><small>RISK LEVEL</small><strong id="riskLevel">—</strong></div>
+<div class="pred" style="grid-column:1/-1"><small>RECOMMENDATION</small><div id="recommendation" class="muted">Waiting...</div></div>
+</div></div>
+</div>
 </section>
 
-<!-- ========================= FUNNEL ========================= -->
-<section id="page-funnel" class="page">
-    <div class="page-head">
-        <div><h1>Funnel Analysis</h1><p>Detailed movement across the complete conversion journey</p></div>
-        <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">User Journey Funnel</div><div class="note">Conversion and drop-off at every stage</div></div><div class="live-badge">● Live</div></div>
-        <div id="detailFunnel" class="panel-body"></div>
-    </div>
-    <div class="grid-3" style="margin-top:16px">
-        <div class="card"><div class="card-title">OVERALL CONVERSION</div><div id="overallConversion" class="card-value green">0.00%</div></div>
-        <div class="card"><div class="card-title">TOTAL USERS</div><div id="funnelUsers" class="card-value blue">0</div></div>
-        <div class="card"><div class="card-title">TOTAL PURCHASES</div><div id="funnelPurchases" class="card-value green">0</div></div>
-    </div>
-</section>
+<section id="live" class="section"><div class="section-label">Live User Journey — Detailed</div><div class="panel"><div class="panel-header"><div><div class="panel-title">Real-time User Activity</div><div class="note">Newest live events first</div></div><div class="live">● LIVE</div></div><div class="table-wrap"><table><thead><tr><th>USER ID</th><th>EVENT</th><th>PRODUCT</th><th>DEVICE</th><th>LOCATION</th><th>TRAFFIC</th><th>TIMESTAMP</th></tr></thead><tbody id="eventsTable"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody></table></div></div></section>
 
-<!-- ========================= DROPOFF ========================= -->
-<section id="page-dropoff" class="page">
-    <div class="page-head">
-        <div><h1>Drop-off Prediction</h1><p>Random Forest ML-powered user risk prediction</p></div>
-        <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">Real-Time Drop-off Prediction</div><div class="note">Purchase probability, drop-off probability, risk and recommended intervention</div></div><div class="live-badge">Random Forest ML</div></div>
-        <div id="detailPrediction" class="panel-body"></div>
-    </div>
-</section>
+<section id="funnel" class="section"><div class="section-label">Funnel Analysis — Detailed</div><div class="panel"><div class="panel-header"><div><div class="panel-title">Complete User Journey Funnel</div><div class="note">Conversion and drop-off by stage</div></div></div><div id="detailedFunnel" class="panel-body"></div></div></section>
 
-<!-- ========================= INSIGHTS ========================= -->
-<section id="page-insights" class="page">
-    <div class="page-head">
-        <div><h1>User Insights</h1><p>Detailed behavioural features used by the prediction system</p></div>
-        <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">Current User Behaviour</div><div class="note">Latest active user</div></div><div class="live-badge">AI Insights</div></div>
-        <div class="panel-body"><div id="detailInsights" class="event-grid"></div></div>
-    </div>
-</section>
+<section id="dropoff" class="section"><div class="section-label">Drop-off Prediction — Detailed</div><div class="panel"><div class="panel-header"><div><div class="panel-title">Random Forest Prediction</div><div class="note">Detailed latest-user prediction</div></div></div><div class="panel-body grid4">
+<div class="metric"><small>USER ID</small><strong id="detailUser">—</strong></div><div class="metric"><small>CURRENT STAGE</small><strong id="detailStage">—</strong></div><div class="metric"><small>EVENT NUMBER</small><strong id="detailEventNumber">—</strong></div><div class="metric"><small>SESSION DURATION</small><strong id="detailDuration">—</strong></div>
+<div class="metric"><small>PURCHASE PROBABILITY</small><strong id="detailPurchase" class="green">—</strong></div><div class="metric"><small>DROP-OFF PROBABILITY</small><strong id="detailDropoff" class="red">—</strong></div><div class="metric"><small>RISK LEVEL</small><strong id="detailRisk">—</strong></div><div class="metric"><small>ACTION</small><strong id="detailAction">—</strong></div>
+<div class="metric" style="grid-column:1/-1"><small>ML RECOMMENDATION</small><strong id="detailRecommendation" style="font-size:14px">Waiting...</strong></div>
+</div></div></section>
 
-<!-- ========================= MODEL ========================= -->
-<section id="page-model" class="page">
-    <div class="page-head">
-        <div><h1>Model Performance</h1><p>Random Forest model status and prediction outputs</p></div>
-        <button class="btn primary" onclick="loadDashboard()">↻ Refresh</button>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">Random Forest ML Model</div><div class="note">Drop-off and purchase prediction engine</div></div><div class="live-badge">ML System</div></div>
-        <div class="panel-body">
-            <div id="detailModelStatus" class="model-status">● Checking ML model...</div>
-            <div class="model-grid">
-                <div class="model-card"><small>MODEL</small><strong>Random Forest</strong></div>
-                <div class="model-card"><small>MODEL FILE</small><strong>dropoff_model.pkl</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Purchase Probability</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Drop-off Probability</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Risk Level</strong></div>
-                <div class="model-card"><small>OUTPUT</small><strong>Recommendation</strong></div>
-            </div>
-        </div>
-    </div>
-    <div class="grid-3" style="margin-top:16px">
-        <div class="card"><div class="card-title">CURRENT USER</div><div id="modelUser" class="card-value" style="font-size:17px">—</div></div>
-        <div class="card"><div class="card-title">CURRENT STAGE</div><div id="modelStage" class="card-value" style="font-size:17px">—</div></div>
-        <div class="card"><div class="card-title">PREDICTION SOURCE</div><div id="modelSource" class="card-value" style="font-size:17px">—</div></div>
-    </div>
-</section>
+<section id="insights" class="section"><div class="section-label">User Insights — Detailed</div><div class="panel"><div class="panel-header"><div><div class="panel-title">Behaviour, Device, Location & Traffic</div><div class="note">Current active user's journey features</div></div></div><div class="panel-body grid4">
+<div class="metric"><small>USER ID</small><strong id="insightUser">—</strong></div><div class="metric"><small>STAGE</small><strong id="insightStage">—</strong></div><div class="metric"><small>EVENTS</small><strong id="insightEvents">—</strong></div><div class="metric"><small>SESSION</small><strong id="insightDuration">—</strong></div>
+<div class="metric"><small>VISITS</small><strong id="insightVisits">—</strong></div><div class="metric"><small>PRODUCT VIEWS</small><strong id="insightViews">—</strong></div><div class="metric"><small>CART</small><strong id="insightCart">—</strong></div><div class="metric"><small>CHECKOUT</small><strong id="insightCheckout">—</strong></div>
+<div class="metric"><small>PURCHASES</small><strong id="insightPurchase">—</strong></div><div class="metric"><small>DEVICE</small><strong id="insightDevice">—</strong></div><div class="metric"><small>LOCATION</small><strong id="insightLocation">—</strong></div><div class="metric"><small>TRAFFIC</small><strong id="insightTraffic">—</strong></div>
+</div></div></section>
 
-<!-- ========================= DATASET ========================= -->
-<section id="page-dataset" class="page">
-    <div class="page-head">
-        <div><h1>E-commerce Dataset</h1><p>Separate large-scale behavioural dataset used for analytics and ML</p></div>
-        <button class="btn primary" onclick="loadDataset()">↻ Refresh Dataset</button>
-    </div>
+<section id="model" class="section"><div class="section-label">Model Performance — Detailed</div><div class="panel"><div class="panel-header"><div><div class="panel-title">Random Forest ML Model</div><div class="note">Drop-off and purchase prediction engine</div></div><div id="modelStatus" class="live">Checking...</div></div><div class="panel-body grid3"><div class="metric"><small>MODEL</small><strong>Random Forest</strong></div><div class="metric"><small>MODEL FILE</small><strong>dropoff_model.pkl</strong></div><div class="metric"><small>OUTPUT</small><strong>Purchase Probability</strong></div><div class="metric"><small>OUTPUT</small><strong>Drop-off Probability</strong></div><div class="metric"><small>OUTPUT</small><strong>Risk Level</strong></div><div class="metric"><small>OUTPUT</small><strong>Recommendation</strong></div></div></div></section>
 
-    <div class="dataset-highlight">
-        <div class="big" id="datasetTotal">50,000</div>
-        <div class="small">E-COMMERCE DATASET EVENTS — target dataset size</div>
-    </div>
+<!-- IMPORTANT: DATASET IS ONLY AT THE END -->
+<section id="ecommerceDataset" class="section">
+<div class="section-label">E-commerce Dataset — Complete Detailed Analysis</div>
+<div id="datasetError"></div>
+<div class="panel">
+<div class="panel-header"><div><div class="panel-title">Historical E-commerce Dataset</div><div class="note">All statistics below are calculated from the actual CSV.</div></div><button class="btn" onclick="loadEcommerceDataset()">↻ Refresh Dataset</button></div>
+<div class="panel-body">
 
-    <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">E-commerce Dataset Analysis</div><div class="note">This dataset is separate from live user events</div></div><div class="live-badge">● Dataset Active</div></div>
-        <div class="panel-body">
-            <div class="dataset-grid">
-                <div class="dataset-card"><small>TOTAL EVENTS</small><strong id="datasetEvents">50,000</strong></div>
-                <div class="dataset-card"><small>UNIQUE USERS</small><strong id="datasetUsers">—</strong></div>
-                <div class="dataset-card"><small>VISITS / PRODUCT VIEWS</small><strong id="datasetViews">—</strong></div>
-                <div class="dataset-card"><small>ADD TO CART</small><strong id="datasetCart">—</strong></div>
-                <div class="dataset-card"><small>SIGNUPS / CHECKOUT</small><strong id="datasetCheckout">—</strong></div>
-                <div class="dataset-card"><small>PURCHASES</small><strong id="datasetPurchases">—</strong></div>
-            </div>
-            <div class="recommendation">
-                <div class="recommendation-title">Dataset Purpose</div>
-                <div class="recommendation-text">
-                    The 50,000-event e-commerce dataset is used for large-scale user journey analysis,
-                    funnel conversion/drop-off analysis and machine-learning based purchase/drop-off prediction.
-                    Live tracking data remains separate.
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
+<div class="section-head"><div><strong>Dataset Overview</strong><span class="muted">Actual CSV</span></div></div>
+<div class="cards">
+<div class="card"><div class="card-title">Total Events</div><div id="dsTotal" class="card-value blue">—</div></div>
+<div class="card"><div class="card-title">Unique Users</div><div id="dsUsers" class="card-value cyan">—</div></div>
+<div class="card"><div class="card-title">Product Views</div><div id="dsViews" class="card-value">—</div></div>
+<div class="card"><div class="card-title">Add to Cart</div><div id="dsCart" class="card-value">—</div></div>
+<div class="card"><div class="card-title">Checkout</div><div id="dsCheckout" class="card-value orange">—</div></div>
+<div class="card"><div class="card-title">Purchases</div><div id="dsPurchases" class="card-value green">—</div></div>
 </div>
 
-<footer class="footer">
-    ShopFlow Analytics<br><br>
-    Real-time User Journey Analytics & Drop-off Prediction
-</footer>
+<br><div class="section-head"><div><strong>Detailed Dataset Analysis</strong><span class="muted">Actual rows and detected CSV columns</span></div></div>
+<div class="panel" style="background:#07111f"><div class="panel-body"><div id="datasetColumns" class="muted">Detecting columns...</div></div></div>
+<br>
+<div class="table-wrap" style="max-height:520px"><table><thead id="datasetHead"></thead><tbody id="datasetRows"><tr><td class="loading">Loading actual dataset...</td></tr></tbody></table></div>
+
+<br><div class="section-head"><div><strong>Drop-off Analysis</strong></div></div>
+<div class="grid4">
+<div class="metric"><small>STOPPED AFTER VISIT</small><strong id="dropVisit">—</strong></div>
+<div class="metric"><small>STOPPED AFTER PRODUCT VIEW</small><strong id="dropView">—</strong></div>
+<div class="metric"><small>STOPPED AFTER ADD TO CART</small><strong id="dropCart">—</strong></div>
+<div class="metric"><small>CHECKOUT WITHOUT PURCHASE</small><strong id="dropCheckout">—</strong></div>
+<div class="metric"><small>VISIT DROP-OFF %</small><strong id="dropVisitPct">—</strong></div>
+<div class="metric"><small>PRODUCT VIEW DROP-OFF %</small><strong id="dropViewPct">—</strong></div>
+<div class="metric"><small>ADD TO CART DROP-OFF %</small><strong id="dropCartPct">—</strong></div>
+<div class="metric"><small>BIGGEST DROP-OFF</small><strong id="biggestDrop">—</strong></div>
+</div>
+
+<br><div class="section-head"><div><strong>Traffic Analysis</strong><span class="muted">Only sources actually present in the CSV</span></div></div>
+<div class="panel" style="background:#07111f"><div class="panel-body"><table class="analysis-table"><thead><tr><th>Traffic Source</th><th>Events</th><th>%</th></tr></thead><tbody id="trafficRows"></tbody></table></div></div>
+
+<br><div class="section-head"><div><strong>Device Analysis</strong><span class="muted">Only devices actually present in the CSV</span></div></div>
+<div class="panel" style="background:#07111f"><div class="panel-body"><table class="analysis-table"><thead><tr><th>Device</th><th>Events</th><th>%</th></tr></thead><tbody id="deviceRows"></tbody></table></div></div>
+
+<br><div class="section-head"><div><strong>Time Analysis</strong><span class="muted">Calculated from detected date/time/timestamp columns</span></div></div>
+<div class="grid4">
+<div class="metric"><small>DATES COVERED</small><strong id="dateRange">—</strong></div>
+<div class="metric"><small>PEAK ACTIVITY TIME</small><strong id="peakHour">—</strong></div>
+<div class="metric"><small>PEAK ACTIVITY EVENTS</small><strong id="peakHourCount">—</strong></div>
+<div class="metric"><small>PEAK PURCHASE TIME</small><strong id="peakPurchaseHour">—</strong></div>
+</div>
+<br>
+<div class="grid2">
+<div class="panel" style="background:#07111f"><div class="panel-header"><div><div class="panel-title">Events by Date</div></div></div><div class="table-wrap"><table class="analysis-table"><thead><tr><th>Date</th><th>Events</th></tr></thead><tbody id="dateRows"></tbody></table></div></div>
+<div class="panel" style="background:#07111f"><div class="panel-header"><div><div class="panel-title">Events by Hour</div></div></div><div class="table-wrap"><table class="analysis-table"><thead><tr><th>Hour</th><th>Events</th><th>Drop-offs</th><th>Purchases</th></tr></thead><tbody id="hourRows"></tbody></table></div></div>
+</div>
+
+</div></div>
+</section>
+</div>
+<footer style="text-align:center;padding:30px;color:#52647a;font-size:11px;border-top:1px solid #17263a">ShopFlow Analytics<br><br>Real-time User Journey Analytics & Drop-off Prediction</footer>
 </main>
 
 <script>
-const pages = ["overview","live","funnel","dropoff","insights","model","dataset"];
-let latestDashboard = {};
-let latestDataset = {};
-
-function escapeHTML(value){
-    return String(value ?? "—")
-        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-}
-
-function formatDate(ts){
-    if(!ts) return "—";
-    const d = new Date(ts);
-    return isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
-}
-
-function updateClock(){
-    const el = document.getElementById("liveClock");
-    el.textContent = new Date().toLocaleString(undefined,{
-        day:"2-digit",month:"short",year:"numeric",
-        hour:"2-digit",minute:"2-digit",second:"2-digit"
-    });
-}
-setInterval(updateClock,1000);
-updateClock();
-
-function showPage(page){
-    if(!pages.includes(page)) page="overview";
-    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-    document.getElementById("page-"+page).classList.add("active");
-    document.querySelectorAll(".nav a").forEach(a=>{
-        a.classList.toggle("active",a.dataset.page===page);
-    });
-    window.scrollTo({top:0,behavior:"smooth"});
-    if(page==="dataset") loadDataset();
-}
-
-function route(){
-    const hash=(location.hash||"#overview").replace("#","");
-    showPage(hash);
-}
-window.addEventListener("hashchange",route);
-
-document.querySelectorAll(".nav a").forEach(a=>{
-    a.addEventListener("click",()=>showPage(a.dataset.page));
-});
-
-function getCounts(data){
-    return data && data.event_counts ? data.event_counts : {};
-}
-
-function renderFunnel(funnel, targetId){
-    const container=document.getElementById(targetId);
-    if(!container) return;
-
-    const stages=[
-        ["visit","Visit"],["product_view","Product View"],
-        ["add_to_cart","Add to Cart"],["view_cart","View Cart"],
-        ["checkout","Checkout"],["purchase","Purchase"]
-    ];
-    const values=stages.map(s=>Number(funnel?.[s[0]]||0));
-    const max=Math.max(...values,1);
-    let html="";
-
-    stages.forEach((s,i)=>{
-        const value=values[i];
-        const previous=i===0?value:values[i-1];
-        const conversion=i===0?100:(previous>0?(value/previous)*100:0);
-        const dropoff=i===0?0:(previous>0?100-conversion:0);
-        const width=Math.max(value>0?5:1,(value/max)*100);
-
-        html += `
-        <div class="funnel-stage">
-            <div class="funnel-row">
-                <div class="funnel-label">${s[1]}</div>
-                <div class="funnel-bar-container">
-                    <div class="funnel-bar" style="width:${width}%">${value.toLocaleString()}</div>
-                </div>
-                <div class="funnel-number">${value.toLocaleString()}</div>
-            </div>
-            <div class="funnel-details">
-                <span>Conversion: ${conversion.toFixed(1)}%</span>
-                <span>Drop-off: ${dropoff.toFixed(1)}%</span>
-            </div>
-        </div>`;
-    });
-    container.innerHTML=html;
-}
-
-function predictionHTML(prediction){
-    if(!prediction){
-        return `<div class="empty">No user activity available yet.</div>`;
-    }
-
-    const purchase=Number(prediction.purchase_probability||0);
-    const dropoff=Number(prediction.dropoff_probability||0);
-    const risk=String(prediction.risk_level||"LOW").toUpperCase();
-    const riskClass=risk==="HIGH"?"risk-high":risk==="MEDIUM"?"risk-medium":"risk-low";
-
-    return `
-    <div class="prediction-grid">
-        <div class="prediction-card">
-            <div class="prediction-label">PURCHASE PROBABILITY</div>
-            <div class="prediction-value green">${purchase.toFixed(2)}%</div>
-            <div class="progress"><div class="progress-bar progress-green" style="width:${Math.max(0,Math.min(100,purchase))}%"></div></div>
-        </div>
-        <div class="prediction-card">
-            <div class="prediction-label">DROP-OFF PROBABILITY</div>
-            <div class="prediction-value red">${dropoff.toFixed(2)}%</div>
-            <div class="progress"><div class="progress-bar progress-red" style="width:${Math.max(0,Math.min(100,dropoff))}%"></div></div>
-        </div>
-        <div class="prediction-card">
-            <div class="prediction-label">RISK LEVEL</div>
-            <div class="prediction-value ${riskClass}">${escapeHTML(risk)}</div>
-        </div>
-    </div>
-    <div class="recommendation">
-        <div class="recommendation-title">Recommendation</div>
-        <div class="recommendation-text">${escapeHTML(prediction.recommendation||"No recommendation available.")}</div>
-    </div>
-    <div class="recommendation">
-        <div class="recommendation-title">Recommended Action</div>
-        <div class="recommendation-text">${escapeHTML(prediction.action||"Continue monitoring")}</div>
-    </div>`;
-}
-
-function renderPrediction(prediction){
-    document.getElementById("overviewPrediction").innerHTML=predictionHTML(prediction);
-    document.getElementById("detailPrediction").innerHTML=predictionHTML(prediction);
-}
-
-function renderEvents(events, targetId, limit=10){
-    const table=document.getElementById(targetId);
-    if(!table) return;
-    if(!events || !events.length){
-        table.innerHTML=`<tr><td colspan="${targetId==="liveEventsTable"?7:6}" class="empty">No recent activity.</td></tr>`;
-        return;
-    }
-
-    const rows=events.slice(0,limit).map(e=>`
-        <tr>
-            <td>${escapeHTML(e.user_id||"—")}</td>
-            <td><span class="event-pill">${escapeHTML(e.event_type||"—")}</span></td>
-            ${targetId==="liveEventsTable"?`<td>${escapeHTML(e.product_id||"—")}</td>`:""}
-            <td>${escapeHTML(e.device||"—")}</td>
-            <td>${escapeHTML(e.location||"—")}</td>
-            <td>${escapeHTML(e.traffic_source||"—")}</td>
-            <td>${formatDate(e.timestamp)}</td>
-        </tr>`).join("");
-    table.innerHTML=rows;
-}
-
-function renderInsights(prediction){
-    const target=document.getElementById("detailInsights");
-    if(!target) return;
-    if(!prediction){
-        target.innerHTML=`<div class="empty" style="grid-column:1/-1">No user prediction available yet.</div>`;
-        return;
-    }
-    const seconds=Number(prediction.session_duration_seconds||0);
-    const duration=seconds>=60
-        ? `${Math.floor(seconds/60)}m ${Math.floor(seconds%60)}s`
-        : `${Math.floor(seconds)}s`;
-
-    const items=[
-        ["USER ID",prediction.user_id],
-        ["CURRENT STAGE",prediction.current_stage],
-        ["EVENT NUMBER",prediction.event_number||0],
-        ["SESSION DURATION",duration],
-        ["VISITS",prediction.visit_count||0],
-        ["PRODUCT VIEWS",prediction.product_view_count||0],
-        ["CART EVENTS",prediction.cart_count||0],
-        ["CHECKOUTS",prediction.checkout_count||0],
-        ["PURCHASES",prediction.purchase_count||0],
-        ["DEVICE",prediction.device],
-        ["LOCATION",prediction.location],
-        ["TRAFFIC SOURCE",prediction.traffic_source]
-    ];
-    target.innerHTML=items.map(x=>`
-        <div class="event-card">
-            <div class="event-name">${x[0]}</div>
-            <div class="event-count">${escapeHTML(x[1]??"—")}</div>
-        </div>`).join("");
-}
-
-function renderReasons(data){
-    const target=document.getElementById("dropoffReasons");
-    if(!target) return;
-    const reasons=[
-        ["High Checkout Abandonment",42.8],
-        ["Long / Complex Journey",21.4],
-        ["Shopping Intent Not Converted",15.6],
-        ["Payment / Checkout Friction",12.7],
-        ["Other Behaviour",7.5]
-    ];
-    target.innerHTML=reasons.map(r=>`
-        <div class="reason">
-            <div class="reason-top"><span>${r[0]}</span><strong>${r[1]}%</strong></div>
-            <div class="reason-bar"><div class="reason-fill" style="width:${r[1]}%"></div></div>
-        </div>`).join("");
-}
-
-function updateModel(data){
-    const loaded=!!data?.ml_model_loaded;
-    const text=loaded
-        ?"● Random Forest ML model loaded and ready"
-        :"⚠ ML model is not loaded";
-    ["overviewModelStatus","detailModelStatus"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){el.textContent=text;el.style.color=loaded?"#22c55e":"#f59e0b";}
-    });
-
-    const p=data?.prediction;
-    document.getElementById("modelUser").textContent=p?.user_id||"—";
-    document.getElementById("modelStage").textContent=p?.current_stage||"—";
-    document.getElementById("modelSource").textContent=p?.prediction_source||"Random Forest ML";
-    document.getElementById("liveMLStatus").textContent=loaded?"Model loaded successfully":"Model unavailable";
-}
-
-function updateFunnelSummary(data){
-    const f=data?.funnel||{};
-    const visit=Number(f.visit||0);
-    const purchase=Number(f.purchase||0);
-    document.getElementById("overallConversion").textContent=
-        (visit>0?(purchase/visit)*100:0).toFixed(2)+"%";
-    document.getElementById("funnelUsers").textContent=Number(data?.unique_users||0).toLocaleString();
-    document.getElementById("funnelPurchases").textContent=purchase.toLocaleString();
-}
-
-async function loadDataset(){
-    try{
-        const response=await fetch("/api/ecommerce-dataset?_="+Date.now(),{
-            cache:"no-store",
-            headers:{"Accept":"application/json","Cache-Control":"no-cache"}
-        });
-        if(!response.ok) throw new Error("Dataset endpoint unavailable");
-        const dataset=await response.json();
-        latestDataset=dataset;
-        const c=dataset.event_counts||{};
-        const total=Number(dataset.total_events||50000);
-
-        document.getElementById("datasetTotal").textContent=total.toLocaleString();
-        document.getElementById("datasetEvents").textContent=total.toLocaleString();
-        document.getElementById("datasetUsers").textContent=Number(dataset.unique_users||0).toLocaleString();
-        document.getElementById("datasetViews").textContent=
-            Number(c.product_view ?? c.visit ?? 0).toLocaleString();
-        document.getElementById("datasetCart").textContent=Number(c.add_to_cart||0).toLocaleString();
-        document.getElementById("datasetCheckout").textContent=
-            Number(c.checkout ?? c.signup ?? 0).toLocaleString();
-        document.getElementById("datasetPurchases").textContent=Number(c.purchase||0).toLocaleString();
-    }catch(err){
-        console.error("E-commerce dataset error:",err);
-        // Keep the requested 50,000 dataset headline visible even if endpoint is temporarily unavailable.
-        document.getElementById("datasetTotal").textContent="50,000";
-        document.getElementById("datasetEvents").textContent="50,000";
-    }
-}
-
-async function loadDashboard(){
-    try{
-        const response=await fetch("/dashboard-data?_="+Date.now(),{
-            method:"GET",
-            cache:"no-store",
-            headers:{
-                "Accept":"application/json",
-                "Cache-Control":"no-cache",
-                "Pragma":"no-cache"
-            }
-        });
-        if(!response.ok) throw new Error("Dashboard data unavailable");
-
-        const data=await response.json();
-        latestDashboard=data;
-        const counts=getCounts(data);
-
-        document.getElementById("events").textContent=Number(data.total_events||0).toLocaleString();
-        document.getElementById("users").textContent=Number(data.unique_users||0).toLocaleString();
-        document.getElementById("views").textContent=Number(counts.product_view||0).toLocaleString();
-        document.getElementById("purchases").textContent=Number(counts.purchase||0).toLocaleString();
-
-        renderFunnel(data.funnel||{}, "overviewFunnel");
-        renderFunnel(data.funnel||{}, "detailFunnel");
-        updateFunnelSummary(data);
-        renderPrediction(data.prediction);
-        renderEvents(data.recent_events||[], "overviewEventsTable", 8);
-        renderEvents(data.recent_events||[], "liveEventsTable", 20);
-        renderInsights(data.prediction);
-        updateModel(data);
-        renderReasons(data);
-
-        const events=data.recent_events||[];
-        document.getElementById("liveSystemStatus").textContent=
-            events.length ? "Events tracked live" : "No events tracked yet";
-        document.getElementById("liveLatestUser").textContent=
-            data.prediction?.user_id || events[0]?.user_id || "Waiting for activity";
-
-    }catch(err){
-        console.error("Dashboard error:",err);
-        document.getElementById("liveSystemStatus").textContent="Waiting for live data";
-        document.getElementById("liveLatestUser").textContent="Waiting for activity";
-    }
-}
-
-route();
-loadDashboard();
-loadDataset();
-
-// Real-time refresh: dashboard data every 5 seconds.
-// Clock itself updates every second independently.
-setInterval(loadDashboard,5000);
+const STAGES=[{key:"visit",label:"Visit"},{key:"product_view",label:"Product View"},{key:"add_to_cart",label:"Add to Cart"},{key:"view_cart",label:"View Cart"},{key:"checkout",label:"Checkout"},{key:"purchase",label:"Purchase"}];
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+function fmt(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleString()}
+function renderFunnel(f,id){const c=document.getElementById(id);const vals=STAGES.map(s=>Number(f?.[s.key]||0)),max=Math.max(...vals,1);c.innerHTML=STAGES.map((s,i)=>{const v=vals[i],prev=i?vals[i-1]:v,conv=i?(prev?v/prev*100:0):100,drop=i?Math.max(0,100-conv):0,w=Math.max(4,v/max*100);return `<div class="funnel-stage"><div class="funnel-row"><div class="funnel-label">${s.label}</div><div class="funnel-bar-container"><div class="funnel-bar" style="width:${w}%">${v.toLocaleString()}</div></div><div class="funnel-number">${v.toLocaleString()}</div></div><div class="funnel-details"><span>Conversion: ${conv.toFixed(1)}%</span><span>Drop-off: ${drop.toFixed(1)}%</span></div></div>`}).join("")}
+function renderEvents(events,id){const t=document.getElementById(id);if(!events?.length){t.innerHTML='<tr><td colspan="7" class="loading">No events available.</td></tr>';return}t.innerHTML=events.slice(0,20).map(e=>`<tr><td>${esc(e.user_id)}</td><td><span class="pill">${esc(e.event_type)}</span></td><td>${esc(e.product_id)}</td><td>${esc(e.device)}</td><td>${esc(e.location)}</td><td>${esc(e.traffic_source)}</td><td>${fmt(e.timestamp)}</td></tr>`).join("")}
+function renderPrediction(p){if(!p)return;const pur=+p.purchase_probability||0,drop=+p.dropoff_probability||0;document.getElementById("purchaseProbability").textContent=pur.toFixed(2)+"%";document.getElementById("dropoffProbability").textContent=drop.toFixed(2)+"%";document.getElementById("purchaseProgress").style.width=Math.max(0,Math.min(100,pur))+"%";document.getElementById("dropoffProgress").style.width=Math.max(0,Math.min(100,drop))+"%";const risk=(p.risk_level||"LOW").toUpperCase();const r=document.getElementById("riskLevel");r.textContent=risk;r.className=risk==="HIGH"?"red":risk==="MEDIUM"?"orange":"green";document.getElementById("recommendation").textContent=p.recommendation||"No recommendation.";document.getElementById("predictionSource").textContent=p.prediction_source||"Random Forest ML";document.getElementById("detailUser").textContent=p.user_id||"—";document.getElementById("detailStage").textContent=p.current_stage||"—";document.getElementById("detailEventNumber").textContent=p.event_number||0;const sec=+p.session_duration_seconds||0;document.getElementById("detailDuration").textContent=Math.floor(sec/60)+" min "+(sec%60)+" sec";document.getElementById("detailPurchase").textContent=pur.toFixed(2)+"%";document.getElementById("detailDropoff").textContent=drop.toFixed(2)+"%";document.getElementById("detailRisk").textContent=risk;document.getElementById("detailAction").textContent=p.action||"Continue monitoring";document.getElementById("detailRecommendation").textContent=p.recommendation||"No recommendation.";const set=(id,v)=>document.getElementById(id).textContent=v??"—";set("insightUser",p.user_id);set("insightStage",p.current_stage);set("insightEvents",p.event_number||0);set("insightDuration",Math.floor(sec/60)+" min "+(sec%60)+" sec");set("insightVisits",p.visit_count||0);set("insightViews",p.product_view_count||0);set("insightCart",p.cart_count||0);set("insightCheckout",p.checkout_count||0);set("insightPurchase",p.purchase_count||0);set("insightDevice",p.device);set("insightLocation",p.location);set("insightTraffic",p.traffic_source)}
+async function loadDashboard(){try{const r=await fetch("/dashboard-data?ts="+Date.now(),{cache:"no-store"});const d=await r.json(),c=d.event_counts||{};document.getElementById("events").textContent=(d.total_events||0).toLocaleString();document.getElementById("users").textContent=(d.unique_users||0).toLocaleString();document.getElementById("views").textContent=(c.product_view||0).toLocaleString();document.getElementById("purchases").textContent=(c.purchase||0).toLocaleString();renderFunnel(d.funnel||{},"overviewFunnel");renderFunnel(d.funnel||{},"detailedFunnel");renderEvents(d.recent_events||[],"eventsTable");renderPrediction(d.prediction);document.getElementById("modelStatus").textContent=d.ml_model_loaded?"● Random Forest ML model loaded and ready":"⚠ ML model not loaded"}catch(e){console.error(e)}}
+function rowsHTML(obj,total){return Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${Number(v).toLocaleString()}</td><td>${total?(v/total*100).toFixed(1):"0.0"}%</td></tr>`).join("")}
+function rows2HTML(obj){return Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${Number(v).toLocaleString()}</td></tr>`).join("")}
+function renderDatasetTable(cols,rows){document.getElementById("datasetColumns").textContent="CSV columns: "+cols.join(", ");document.getElementById("datasetHead").innerHTML="<tr>"+cols.map(c=>`<th>${esc(c)}</th>`).join("")+"</tr>";document.getElementById("datasetRows").innerHTML=rows.map(row=>"<tr>"+cols.map(c=>`<td>${esc(row[c])}</td>`).join("")+"</tr>").join("")}
+async function loadEcommerceDataset(){const err=document.getElementById("datasetError");err.innerHTML="";try{const r=await fetch("/api/ecommerce-dataset-detailed?ts="+Date.now(),{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.message||"Dataset API failed");document.getElementById("dsTotal").textContent=(d.total_events||0).toLocaleString();document.getElementById("dsUsers").textContent=(d.unique_users||0).toLocaleString();const ec=d.event_counts||{};document.getElementById("dsViews").textContent=(ec.product_view||0).toLocaleString();document.getElementById("dsCart").textContent=(ec.add_to_cart||0).toLocaleString();document.getElementById("dsCheckout").textContent=(ec.checkout||0).toLocaleString();document.getElementById("dsPurchases").textContent=(ec.purchase||0).toLocaleString();renderDatasetTable(d.columns||[],d.rows||[]);const dr=d.dropoff||{};["visit","view","cart","checkout","visit_pct","view_pct","cart_pct","biggest"].forEach(k=>{const id={visit:"dropVisit",view:"dropView",cart:"dropCart",checkout:"dropCheckout",visit_pct:"dropVisitPct",view_pct:"dropViewPct",cart_pct:"dropCartPct",biggest:"biggestDrop"}[k];document.getElementById(id).textContent=dr[k]??"—";});document.getElementById("trafficRows").innerHTML=rowsHTML(d.traffic_sources,d.total_events);document.getElementById("deviceRows").innerHTML=rowsHTML(d.devices,d.total_events);document.getElementById("dateRange").textContent=d.time?.date_range||"—";document.getElementById("peakHour").textContent=d.time?.peak_hour||"—";document.getElementById("peakHourCount").textContent=(d.time?.peak_hour_count||0).toLocaleString();document.getElementById("peakPurchaseHour").textContent=d.time?.peak_purchase_hour||"—";document.getElementById("dateRows").innerHTML=rows2HTML(d.time?.events_by_date||{});document.getElementById("hourRows").innerHTML=Object.entries(d.time?.events_by_hour||{}).sort((a,b)=>Number(a[0])-Number(b[0])).map(([h,x])=>`<tr><td>${esc(h)}</td><td>${x.events}</td><td>${x.dropoffs}</td><td>${x.purchases}</td></tr>`).join("")}catch(e){console.error(e);err.innerHTML=`<div class="error">${esc(e.message)}</div>`}}
+document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll(".nav a").forEach(x=>x.classList.remove("active"));a.classList.add("active")}));
+loadDashboard();loadEcommerceDataset();setInterval(loadDashboard,2000);setInterval(loadEcommerceDataset,15000);
 </script>
 </body>
 </html>
