@@ -39,12 +39,17 @@ CORS(app)
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
-
-DATABASE = os.path.join(
+DATABASE_DIR = os.path.join(
     BASE_DIR,
-    "shopflow.db"
+    "instance"
 )
 
+os.makedirs(DATABASE_DIR, exist_ok=True)
+
+DATABASE = os.path.join(
+    DATABASE_DIR,
+    "shopflow.db"
+)
 MODEL_PATH = os.path.join(
     BASE_DIR,
     "ml",
@@ -58,56 +63,99 @@ ECOMMERCE_DATASET_PATH = os.path.join(
     "ecommerce_events.csv"
 )
 
-
 # ============================================================
 # DATABASE
 # ============================================================
 
 def get_db_connection():
-
-    conn = sqlite3.connect(
-        DATABASE
+    os.makedirs(
+        os.path.dirname(DATABASE),
+        exist_ok=True
     )
 
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
-
     return conn
-
 
 # ============================================================
 # INITIALIZE DATABASE
 # ============================================================
 
 def init_database():
-
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS events (
-
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT UNIQUE NOT NULL,
+            created_at TEXT
+        )
+    """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT UNIQUE NOT NULL,
+            product_name TEXT NOT NULL,
+            category TEXT,
+            price REAL NOT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT NOT NULL,
-
+            timestamp TEXT NOT NULL,
             event_type TEXT NOT NULL,
+            device TEXT NOT NULL,
+            location TEXT NOT NULL,
+            traffic_source TEXT NOT NULL,
+            product_id TEXT
+        )
+    """)
 
-            product_id TEXT,
-
-            device TEXT,
-
-            location TEXT,
-
-            traffic_source TEXT,
-
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            amount REAL NOT NULL,
             timestamp TEXT NOT NULL
         )
     """)
 
-    conn.commit()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            device TEXT NOT NULL,
+            location TEXT NOT NULL,
+            traffic_source TEXT NOT NULL,
+            current_stage TEXT NOT NULL,
+            event_number INTEGER NOT NULL,
+            session_duration_seconds REAL NOT NULL,
+            dropoff_probability REAL NOT NULL,
+            purchase_probability REAL NOT NULL,
+            risk_level TEXT NOT NULL,
+            recommendation TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
 
+    conn.commit()
     conn.close()
+# ============================================================
+# INITIALIZE DATABASE ON IMPORT
+# IMPORTANT FOR RENDER / GUNICORN
+# ============================================================
+try:
+    init_database()
+    print("ShopFlow database initialized successfully.")
+except Exception as e:
+    print("WARNING: Database initialization failed.")
+    print("Reason:", e)
 
 
 # ============================================================
@@ -2225,8 +2273,9 @@ if __name__ == "__main__":
     print("==============================================")
     print()
 
+   if __name__ == "__main__":
     app.run(
-    debug=True,
-    host="127.0.0.1",
-    port=5000
-)
+        debug=True,
+        host="0.0.0.0",
+        port=5000
+    )
