@@ -151,7 +151,12 @@ def init_database():
 # IMPORTANT FOR RENDER / GUNICORN
 # ============================================================
 :
-    try:
+    # ============================================================
+# INITIALIZE DATABASE ON IMPORT
+# IMPORTANT FOR RENDER / GUNICORN
+# ============================================================
+
+try:
     init_database()
 
     # Verify that the events table actually exists
