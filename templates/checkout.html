@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>ShopEasy - Checkout</title>
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            color: #111827;
+        }
+
+        header {
+
+            background: #111827;
+
+            color: white;
+
+            padding: 18px 40px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+        header h2 {
+
+            margin: 0;
+        }
+
+        header a {
+
+            color: white;
+
+            text-decoration: none;
+
+            margin-left: 20px;
+        }
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 40px auto;
+
+            padding: 20px;
+        }
+
+        .box {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0,0,0,0.08);
+        }
+
+        h1 {
+
+            margin-top: 0;
+        }
+
+        .item {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            padding: 15px 0;
+
+            border-bottom:
+                1px solid #e5e7eb;
+        }
+
+        .total {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            margin-top: 25px;
+        }
+
+        .form-group {
+
+            margin-top: 20px;
+        }
+
+        label {
+
+            display: block;
+
+            font-weight: bold;
+
+            margin-bottom: 7px;
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 7px;
+        }
+
+        .place-order {
+
+            width: 100%;
+
+            padding: 15px;
+
+            margin-top: 30px;
+
+            background: #111827;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 8px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        .place-order:hover {
+
+            background: #1f2937;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<header>
+
+    <h2>ShopEasy</h2>
+
+    <div>
+
+        <a href="/shop">
+            Home
+        </a>
+
+        <a href="/settings">
+            Settings
+        </a>
+
+    </div>
+
+</header>
+
+
+<div class="container">
+
+    <div class="box">
+
+        <h1>
+            Checkout
+        </h1>
+
+        <p>
+            Review your order and complete your purchase.
+        </p>
+
+
+        <div id="cartItems"></div>
+
+
+        <div class="total">
+
+            <span>
+                Total
+            </span>
+
+            <span id="totalAmount">
+                ₹0
+            </span>
+
+        </div>
+
+
+        <h2>
+            Delivery Details
+        </h2>
+
+
+        <div class="form-group">
+
+            <label>
+                Full Name
+            </label>
+
+            <input
+                type="text"
+                id="customerName"
+                value="{{ user.full_name }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Phone Number
+            </label>
+
+            <input
+                type="text"
+                id="customerPhone"
+                value="{{ user.phone }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Delivery Address
+            </label>
+
+            <input
+                type="text"
+                id="address"
+                placeholder="Enter delivery address"
+            >
+
+        </div>
+
+
+        <button
+            class="place-order"
+            onclick="placeOrder()"
+        >
+            Place Order
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ========================================================
+    // GET CART
+    // ========================================================
+
+    let cart =
+        JSON.parse(
+            localStorage.getItem(
+                "shopflow_cart"
+            )
+        ) || [];
+
+
+    // ========================================================
+    // DISPLAY CART
+    // ========================================================
+
+    function displayCart() {
+
+        const container =
+            document.getElementById(
+                "cartItems"
+            );
+
+        const totalElement =
+            document.getElementById(
+                "totalAmount"
+            );
+
+
+        if (cart.length === 0) {
+
+            container.innerHTML =
+                "<p>Your cart is empty.</p>";
+
+            totalElement.innerText =
+                "₹0";
+
+            return;
+        }
+
+
+        let total = 0;
+
+        let html = "";
+
+
+        cart.forEach(
+            function(item) {
+
+                total +=
+                    Number(item.price);
+
+
+                html += `
+
+                    <div class="item">
+
+                        <span>
+                            ${item.productName}
+                        </span>
+
+                        <strong>
+                            ₹${item.price}
+                        </strong>
+
+                    </div>
+
+                `;
+            }
+        );
+
+
+        container.innerHTML =
+            html;
+
+
+        totalElement.innerText =
+            "₹" + total;
+    }
+
+
+    // ========================================================
+    // PLACE ORDER
+    // ========================================================
+
+    async function placeOrder() {
+
+        const address =
+            document.getElementById(
+                "address"
+            ).value.trim();
+
+
+        if (!address) {
+
+            alert(
+                "Please enter your delivery address."
+            );
+
+            return;
+        }
+
+
+        if (cart.length === 0) {
+
+            alert(
+                "Your cart is empty."
+            );
+
+            window.location.href =
+                "/shop";
+
+            return;
+        }
+
+
+        // ---------------------------------------------
+        // TRACK PURCHASE
+        // ---------------------------------------------
+
+        try {
+
+            await fetch(
+                "/track-event",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        user_id:
+                            localStorage.getItem(
+                                "shopflow_user_id"
+                            ) || "USER_SESSION",
+
+                        event_type:
+                            "purchase",
+
+                        device:
+                            getDevice(),
+
+                        location:
+                            "India",
+
+                        traffic_source:
+                            "organic_search",
+
+                        product_id:
+                            cart[0].productId
+
+                    })
+
+                }
+            );
+
+        }
+
+        catch(error) {
+
+            console.error(
+                "Purchase tracking error:",
+                error
+            );
+
+        }
+
+
+        // ---------------------------------------------
+        // SUCCESS
+        // ---------------------------------------------
+
+        alert(
+            "🎉 Order placed successfully!"
+        );
+
+
+        // Clear cart
+
+        localStorage.removeItem(
+            "shopflow_cart"
+        );
+
+
+        // Go back home
+
+        window.location.href =
+            "/shop";
+    }
+
+
+    // ========================================================
+    // DEVICE
+    // ========================================================
+
+    function getDevice() {
+
+        const width =
+            window.innerWidth;
+
+
+        if (width <= 600) {
+
+            return "mobile";
+        }
+
+
+        if (width <= 1000) {
+
+            return "tablet";
+        }
+
+
+        return "desktop";
+    }
+
+
+    // ========================================================
+    // LOAD
+    // ========================================================
+
+    displayCart();
+
+</script>
+
+</body>
+
+</html>
