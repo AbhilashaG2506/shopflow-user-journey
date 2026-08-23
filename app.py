@@ -150,7 +150,7 @@ def init_database():
 # INITIALIZE DATABASE ON IMPORT
 # IMPORTANT FOR RENDER / GUNICORN
 # ============================================================
-:
+
     # ============================================================
 # INITIALIZE DATABASE ON IMPORT
 # IMPORTANT FOR RENDER / GUNICORN
