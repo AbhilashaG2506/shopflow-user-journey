@@ -24,7 +24,7 @@ CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_FILE = BASE_DIR / "data" / "data/ecommerce_events.csv"
+DATA_FILE = os.path.join(BASE_DIR, "data", "ecommerce_events.csv")
 MODEL_FILE = BASE_DIR / "models" / "dropout_model.pkl"
 METRICS_FILE = BASE_DIR / "models" / "model_metrics.pkl"
 
