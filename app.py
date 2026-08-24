@@ -2370,30 +2370,72 @@ def dataset_columns():
 @app.route("/api/live")
 def api_live():
 
-    all_events = load_live_events()
+    try:
+        # Use ONLY the e-commerce dataset
+        df = load_data()
 
-    if all_events.empty:
+        if df.empty:
+            return jsonify({
+                "events": [],
+                "count": 0
+            })
+
+        # Make sure timestamp is usable
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(
+                df["timestamp"],
+                errors="coerce"
+            )
+
+            df = df.sort_values(
+                ["timestamp"],
+                ascending=False
+            )
+
+        # Latest 20 events from e-commerce dataset
+        recent_df = df.head(20)
+
+        events = []
+
+        for _, row in recent_df.iterrows():
+
+            event = {}
+
+            for col in [
+                "id",
+                "user_id",
+                "event_type",
+                "product_id",
+                "device",
+                "location",
+                "traffic_source",
+                "timestamp"
+            ]:
+                if col in recent_df.columns:
+
+                    value = row[col]
+
+                    if pd.isna(value):
+                        value = ""
+
+                    event[col] = str(value)
+
+            events.append(event)
+
+        return jsonify({
+            "events": events,
+            "count": len(events)
+        })
+
+    except Exception as e:
+
+        print("Live event loading error:", e)
 
         return jsonify({
             "events": [],
-            "count": 0
+            "count": 0,
+            "error": str(e)
         })
-
-    all_events[
-        "timestamp"
-    ] = pd.to_datetime(
-        all_events[
-            "timestamp"
-        ],
-        errors="coerce"
-    )
-
-    all_events = all_events.sort_values(
-        ["timestamp", "id"],
-        ascending=[False, False]
-    )
-
-    records = []
 
     # -----------------------------------------------------
     # Latest state for every user
