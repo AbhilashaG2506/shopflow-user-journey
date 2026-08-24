@@ -2093,22 +2093,26 @@ def dashboard_data():
     # FUNNEL
     # -----------------------------------------------------
 
-    funnel_order = [
-    ("visit", "Signup"),
-    ("signup", "Add to Cart"),
-    ("add_to_cart", "Checkout"),
-    ("checkout", "Purchase")
-]
-
-    # -----------------------------------------------------
-    # DROPOFF
+      # -----------------------------------------------------
+    # FUNNEL
     # -----------------------------------------------------
 
+        # -----------------------------------------------------
+    # FUNNEL
+    # -----------------------------------------------------
+
+    funnel = {
+        "visit": int(event_counts.get("visit", 0)),
+        "signup": int(event_counts.get("signup", 0)),
+        "add_to_cart": int(event_counts.get("add_to_cart", 0)),
+        "checkout": int(event_counts.get("checkout", 0)),
+        "purchase": int(event_counts.get("purchase", 0))
+    }
+
     funnel_order = [
-        ("visit", "Product View"),
-        ("product_view", "Add to Cart"),
-        ("add_to_cart", "View Cart"),
-        ("view_cart", "Checkout"),
+        ("visit", "Signup"),
+        ("signup", "Add to Cart"),
+        ("add_to_cart", "Checkout"),
         ("checkout", "Purchase")
     ]
 
@@ -2202,10 +2206,9 @@ def dashboard_data():
 
         "recent_events": recent_events,
 
-        "ml_model_loaded": model is not None
+        "ml_model_loaded": False
 
     })
-
 
 # =========================================================
 # FUNNEL PAGE
