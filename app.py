@@ -1,1120 +1,1471 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
+from pathlib import Path
 from datetime import datetime
-import sqlite3
-import os
-import csv
-
-# ============================================================
-# OPTIONAL ML LIBRARIES
-# ============================================================
-
-try:
-    import joblib
-    import pandas as pd
-
-    ML_LIBRARIES_AVAILABLE = True
-
-except Exception as e:
-    joblib = None
-    pd = None
-    ML_LIBRARIES_AVAILABLE = False
-
-    print("Warning: ML libraries are not available.")
-    print("Reason:", e)
-
-
-# ============================================================
-# SHOPFLOW APPLICATION
-# ============================================================
+import pandas as pd
+import mysql.connector
+import joblib
+import math
+import re
 
 app = Flask(__name__)
 CORS(app)
 
+BASE_DIR = Path(__file__).resolve().parent
 
-# ============================================================
-# PATHS
-# ============================================================
+DATA_FILE = BASE_DIR / "data" / "user_journey_data.csv"
+MODEL_FILE = BASE_DIR / "models" / "dropout_model.pkl"
+METRICS_FILE = BASE_DIR / "models" / "model_metrics.pkl"
 
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
-DATABASE_DIR = os.path.join(
-    BASE_DIR,
-    "instance"
-)
+# =========================================================
+# MYSQL
+# =========================================================
 
-os.makedirs(DATABASE_DIR, exist_ok=True)
+MYSQL_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "Abhilasha@123",
+    "database": "funnel_analysis"
+}
 
-DATABASE = os.path.join(
-    DATABASE_DIR,
-    "shopflow.db"
-)
-MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "ml",
-    "models",
-    "dropoff_model.pkl"
-)
 
-ECOMMERCE_DATASET_PATH = os.path.join(
-    BASE_DIR,
-    "data",
-    "ecommerce_events.csv"
-)
+def mysql_connection():
+    return mysql.connector.connect(**MYSQL_CONFIG)
 
-# ============================================================
-# DATABASE
-# ============================================================
 
-def get_db_connection():
-    os.makedirs(
-        os.path.dirname(DATABASE),
-        exist_ok=True
+# =========================================================
+# ML
+# =========================================================
+
+FEATURES = [
+    "age",
+    "pages_visited",
+    "session_duration",
+    "clicks",
+    "previous_visits"
+]
+
+model = None
+metrics = {}
+
+if MODEL_FILE.exists():
+    try:
+        model = joblib.load(MODEL_FILE)
+        print("Random Forest model loaded.")
+    except Exception as e:
+        print("Model loading error:", e)
+
+if METRICS_FILE.exists():
+    try:
+        metrics = joblib.load(METRICS_FILE)
+    except Exception:
+        metrics = {}
+
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def clean_value(value):
+    if value is None:
+        return ""
+
+    if pd.isna(value):
+        return ""
+
+    return str(value).strip()
+
+
+def normalize_event(value):
+    """
+    Converts different CSV/event names into dashboard stages.
+    """
+
+    x = clean_value(value).lower()
+
+    x = x.replace("_", " ")
+    x = x.replace("-", " ")
+    x = re.sub(r"\s+", " ", x).strip()
+
+    mapping = {
+        "visit": "visit",
+        "visited": "visit",
+        "page visit": "visit",
+        "session start": "visit",
+        "landing": "visit",
+        "home": "visit",
+
+        "product view": "product_view",
+        "product viewed": "product_view",
+        "view product": "product_view",
+        "viewed product": "product_view",
+        "product": "product_view",
+
+        "add to cart": "add_to_cart",
+        "added to cart": "add_to_cart",
+        "cart": "add_to_cart",
+
+        "view cart": "view_cart",
+        "cart view": "view_cart",
+
+        "checkout": "checkout",
+        "checkout start": "checkout",
+        "checkout started": "checkout",
+
+        "purchase": "purchase",
+        "purchased": "purchase",
+        "order": "purchase",
+        "payment success": "purchase",
+        "transaction": "purchase"
+    }
+
+    return mapping.get(x, x.replace(" ", "_"))
+
+
+def find_column(df, candidates):
+    """
+    Finds actual CSV column regardless of case,
+    spaces or underscores.
+    """
+
+    if df.empty:
+        return None
+
+    normalized = {}
+
+    for col in df.columns:
+        key = re.sub(
+            r"[^a-z0-9]",
+            "",
+            str(col).lower()
+        )
+        normalized[key] = col
+
+    for candidate in candidates:
+
+        key = re.sub(
+            r"[^a-z0-9]",
+            "",
+            candidate.lower()
+        )
+
+        if key in normalized:
+            return normalized[key]
+
+    return None
+
+
+def load_csv():
+    if not DATA_FILE.exists():
+        return pd.DataFrame()
+
+    try:
+        return pd.read_csv(DATA_FILE)
+    except Exception as e:
+        print("CSV error:", e)
+        return pd.DataFrame()
+
+
+def detect_columns(df):
+    return {
+        "user": find_column(
+            df,
+            [
+                "user_id",
+                "userid",
+                "customer_id",
+                "customerid",
+                "visitor_id",
+                "visitorid"
+            ]
+        ),
+
+        "event": find_column(
+            df,
+            [
+                "event",
+                "event_type",
+                "eventtype",
+                "action",
+                "activity",
+                "stage"
+            ]
+        ),
+
+        "product": find_column(
+            df,
+            [
+                "product_id",
+                "productid",
+                "product",
+                "product_name",
+                "productname",
+                "product_viewed",
+                "item_id",
+                "item"
+            ]
+        ),
+
+        "device": find_column(
+            df,
+            [
+                "device",
+                "device_type",
+                "devicetype"
+            ]
+        ),
+
+        "location": find_column(
+            df,
+            [
+                "location",
+                "city",
+                "country",
+                "region"
+            ]
+        ),
+
+        "traffic": find_column(
+            df,
+            [
+                "traffic_source",
+                "trafficsource",
+                "source",
+                "channel",
+                "marketing_channel"
+            ]
+        ),
+
+        "timestamp": find_column(
+            df,
+            [
+                "timestamp",
+                "datetime",
+                "date_time",
+                "event_time",
+                "event_datetime",
+                "created_at"
+            ]
+        ),
+
+        "date": find_column(
+            df,
+            [
+                "date",
+                "event_date",
+                "visit_date"
+            ]
+        ),
+
+        "time": find_column(
+            df,
+            [
+                "time",
+                "event_time_only"
+            ]
+        )
+    }
+
+
+def normalize_dataset(df):
+    """
+    Creates internal normalized columns while preserving
+    ALL original CSV columns.
+    """
+
+    if df.empty:
+        return df.copy(), detect_columns(df)
+
+    result = df.copy()
+    cols = detect_columns(result)
+
+    # User
+    if cols["user"]:
+        result["_user"] = result[cols["user"]].astype(str)
+    else:
+        result["_user"] = [
+            f"ROW_{i+1}"
+            for i in range(len(result))
+        ]
+
+    # Event
+    if cols["event"]:
+        result["_event"] = result[cols["event"]].apply(
+            normalize_event
+        )
+    else:
+        result["_event"] = ""
+
+    # Product
+    if cols["product"]:
+        result["_product"] = result[cols["product"]].apply(
+            clean_value
+        )
+    else:
+        result["_product"] = ""
+
+    # Device
+    if cols["device"]:
+        result["_device"] = result[cols["device"]].apply(
+            clean_value
+        )
+    else:
+        result["_device"] = ""
+
+    # Location
+    if cols["location"]:
+        result["_location"] = result[cols["location"]].apply(
+            clean_value
+        )
+    else:
+        result["_location"] = ""
+
+    # Traffic
+    if cols["traffic"]:
+        result["_traffic"] = result[cols["traffic"]].apply(
+            clean_value
+        )
+    else:
+        result["_traffic"] = ""
+
+    # Timestamp
+    timestamp_series = pd.Series(
+        pd.NaT,
+        index=result.index
     )
 
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# ============================================================
-# INITIALIZE DATABASE
-# ============================================================
-
-def init_database():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT UNIQUE NOT NULL,
-            created_at TEXT
+    if cols["timestamp"]:
+        timestamp_series = pd.to_datetime(
+            result[cols["timestamp"]],
+            errors="coerce"
         )
-    """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id TEXT UNIQUE NOT NULL,
-            product_name TEXT NOT NULL,
-            category TEXT,
-            price REAL NOT NULL
+    elif cols["date"] and cols["time"]:
+
+        timestamp_series = pd.to_datetime(
+            result[cols["date"]].astype(str)
+            + " "
+            + result[cols["time"]].astype(str),
+            errors="coerce"
         )
-    """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            device TEXT NOT NULL,
-            location TEXT NOT NULL,
-            traffic_source TEXT NOT NULL,
-            product_id TEXT
+    elif cols["date"]:
+
+        timestamp_series = pd.to_datetime(
+            result[cols["date"]],
+            errors="coerce"
         )
-    """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            product_id TEXT NOT NULL,
-            amount REAL NOT NULL,
-            timestamp TEXT NOT NULL
+    result["_timestamp"] = timestamp_series
+
+    return result, cols
+
+
+# =========================================================
+# EVENT COUNTING
+# =========================================================
+
+def event_counts(df):
+    if df.empty:
+        return {
+            "visit": 0,
+            "product_view": 0,
+            "add_to_cart": 0,
+            "view_cart": 0,
+            "checkout": 0,
+            "purchase": 0
+        }
+
+    return {
+        "visit": int(
+            (df["_event"] == "visit").sum()
+        ),
+        "product_view": int(
+            (df["_event"] == "product_view").sum()
+        ),
+        "add_to_cart": int(
+            (df["_event"] == "add_to_cart").sum()
+        ),
+        "view_cart": int(
+            (df["_event"] == "view_cart").sum()
+        ),
+        "checkout": int(
+            (df["_event"] == "checkout").sum()
+        ),
+        "purchase": int(
+            (df["_event"] == "purchase").sum()
         )
-    """)
+    }
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            device TEXT NOT NULL,
-            location TEXT NOT NULL,
-            traffic_source TEXT NOT NULL,
-            current_stage TEXT NOT NULL,
-            event_number INTEGER NOT NULL,
-            session_duration_seconds REAL NOT NULL,
-            dropoff_probability REAL NOT NULL,
-            purchase_probability REAL NOT NULL,
-            risk_level TEXT NOT NULL,
-            recommendation TEXT NOT NULL,
-            created_at TEXT NOT NULL
+
+# =========================================================
+# USER FUNNEL
+# =========================================================
+
+def user_funnel(df):
+    if df.empty:
+        return {
+            "visit": 0,
+            "product_view": 0,
+            "add_to_cart": 0,
+            "view_cart": 0,
+            "checkout": 0,
+            "purchase": 0
+        }
+
+    stages = [
+        "visit",
+        "product_view",
+        "add_to_cart",
+        "view_cart",
+        "checkout",
+        "purchase"
+    ]
+
+    users = {}
+
+    for user, group in df.groupby("_user"):
+
+        events = set(
+            group["_event"].astype(str)
         )
-    """)
 
-    conn.commit()
-    conn.close()
-# ============================================================
-# INITIALIZE DATABASE ON IMPORT
-# IMPORTANT FOR RENDER / GUNICORN
-# ============================================================
+        # If a user exists in the dataset but there is
+        # no explicit Visit event, count the user as a visit.
+        if events:
+            events.add("visit")
 
-    # ============================================================
-# INITIALIZE DATABASE ON IMPORT
-# IMPORTANT FOR RENDER / GUNICORN
-# ============================================================
+        users[str(user)] = events
 
-try:
-    init_database()
+    result = {}
 
-    # Verify that the events table actually exists
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    for stage in stages:
 
-    cursor.execute("""
-        SELECT name
-        FROM sqlite_master
-        WHERE type='table'
-        AND name='events'
-    """)
+        result[stage] = sum(
+            1
+            for events in users.values()
+            if stage in events
+        )
 
-    events_table = cursor.fetchone()
+    return result
 
-    conn.close()
 
-    if events_table:
-        print("ShopFlow database initialized successfully.")
-        print("events table exists.")
+# =========================================================
+# DROP-OFF
+# =========================================================
+
+def dropoff_analysis(df):
+
+    funnel = user_funnel(df)
+
+    visit_users = 0
+    view_users = 0
+    cart_users = 0
+    checkout_users = 0
+    purchase_users = 0
+
+    if not df.empty:
+
+        for user, group in df.groupby("_user"):
+
+            events = set(
+                group["_event"].astype(str)
+            )
+
+            events.add("visit")
+
+            if "visit" in events:
+                visit_users += 1
+
+            if "product_view" in events:
+                view_users += 1
+
+            if "add_to_cart" in events:
+                cart_users += 1
+
+            if "checkout" in events:
+                checkout_users += 1
+
+            if "purchase" in events:
+                purchase_users += 1
+
+    visit_drop = max(
+        visit_users - view_users,
+        0
+    )
+
+    view_drop = max(
+        view_users - cart_users,
+        0
+    )
+
+    cart_drop = max(
+        cart_users - checkout_users,
+        0
+    )
+
+    checkout_drop = max(
+        checkout_users - purchase_users,
+        0
+    )
+
+    stages = {
+        "Visit → Product View": visit_drop,
+        "Product View → Add to Cart": view_drop,
+        "Add to Cart → Checkout": cart_drop,
+        "Checkout → Purchase": checkout_drop
+    }
+
+    biggest = (
+        max(
+            stages,
+            key=stages.get
+        )
+        if stages
+        else "—"
+    )
+
+    return {
+        "visit": visit_drop,
+        "view": view_drop,
+        "cart": cart_drop,
+        "checkout": checkout_drop,
+
+        "visit_pct": round(
+            visit_drop / visit_users * 100,
+            2
+        ) if visit_users else 0,
+
+        "view_pct": round(
+            view_drop / view_users * 100,
+            2
+        ) if view_users else 0,
+
+        "cart_pct": round(
+            cart_drop / cart_users * 100,
+            2
+        ) if cart_users else 0,
+
+        "checkout_pct": round(
+            checkout_drop / checkout_users * 100,
+            2
+        ) if checkout_users else 0,
+
+        "biggest": biggest,
+
+        "biggest_value": stages.get(
+            biggest,
+            0
+        ),
+
+        "funnel": funnel
+    }
+
+
+# =========================================================
+# TIME ANALYSIS
+# =========================================================
+
+def time_analysis(df):
+
+    if df.empty:
+        return {
+            "date_range": "—",
+            "peak_hour": "—",
+            "peak_hour_count": 0,
+            "peak_purchase_hour": "—",
+            "events_by_date": {},
+            "events_by_hour": {}
+        }
+
+    t = df[df["_timestamp"].notna()].copy()
+
+    if t.empty:
+        return {
+            "date_range": "Timestamp not available",
+            "peak_hour": "—",
+            "peak_hour_count": 0,
+            "peak_purchase_hour": "—",
+            "events_by_date": {},
+            "events_by_hour": {}
+        }
+
+    t["_date"] = t["_timestamp"].dt.strftime(
+        "%Y-%m-%d"
+    )
+
+    t["_hour"] = t["_timestamp"].dt.hour
+
+    date_counts = (
+        t.groupby("_date")
+        .size()
+        .sort_index()
+    )
+
+    hour_counts = (
+        t.groupby("_hour")
+        .size()
+        .sort_index()
+    )
+
+    purchase_df = t[
+        t["_event"] == "purchase"
+    ]
+
+    if not purchase_df.empty:
+
+        purchase_hours = (
+            purchase_df
+            .groupby(
+                purchase_df["_timestamp"].dt.hour
+            )
+            .size()
+        )
+
+        purchase_peak = int(
+            purchase_hours.idxmax()
+        )
+
     else:
-        print("ERROR: events table was NOT created.")
+        purchase_peak = None
 
-except Exception as e:
-    print("WARNING: Database initialization failed.")
-    print("Reason:", e)
+    hour_data = {}
 
-# ============================================================
-# LOAD RANDOM FOREST MODEL
-# ============================================================
+    for hour in range(24):
 
-ml_model = None
+        subset = t[
+            t["_hour"] == hour
+        ]
+
+        hour_data[str(hour)] = {
+            "events": int(len(subset)),
+            "dropoffs": int(
+                len(
+                    subset[
+                        subset["_event"].isin([
+                            "visit",
+                            "product_view",
+                            "add_to_cart",
+                            "checkout"
+                        ])
+                    ]
+                )
+            ),
+            "purchases": int(
+                (
+                    subset["_event"]
+                    == "purchase"
+                ).sum()
+            )
+        }
+
+    peak_hour = int(
+        hour_counts.idxmax()
+    ) if not hour_counts.empty else None
+
+    return {
+        "date_range":
+            f"{t['_timestamp'].min().strftime('%Y-%m-%d')} → "
+            f"{t['_timestamp'].max().strftime('%Y-%m-%d')}",
+
+        "peak_hour":
+            f"{peak_hour:02d}:00 - {peak_hour:02d}:59"
+            if peak_hour is not None
+            else "—",
+
+        "peak_hour_count":
+            int(
+                hour_counts.max()
+            ) if not hour_counts.empty else 0,
+
+        "peak_purchase_hour":
+            f"{purchase_peak:02d}:00 - {purchase_peak:02d}:59"
+            if purchase_peak is not None
+            else "No purchases",
+
+        "events_by_date":
+            {
+                str(k): int(v)
+                for k, v in date_counts.items()
+            },
+
+        "events_by_hour":
+            hour_data
+    }
 
 
-if ML_LIBRARIES_AVAILABLE:
+# =========================================================
+# MYSQL TABLES
+# =========================================================
+
+def ensure_mysql_tables():
+
+    connection = None
+    cursor = None
 
     try:
 
-        if os.path.exists(MODEL_PATH):
+        connection = mysql_connection()
+        cursor = connection.cursor()
 
-            ml_model = joblib.load(
-                MODEL_PATH
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS live_events (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                timestamp DATETIME NOT NULL,
+                user_id INT NOT NULL,
+                event_type VARCHAR(100),
+                product_id VARCHAR(255),
+                device VARCHAR(100),
+                location VARCHAR(255),
+                traffic_source VARCHAR(100),
+                current_page VARCHAR(100),
+                age INT DEFAULT 25,
+                pages_visited INT DEFAULT 1,
+                session_duration INT DEFAULT 0,
+                clicks INT DEFAULT 0,
+                previous_visits INT DEFAULT 0,
+                dropout_probability DECIMAL(10,8) DEFAULT 0,
+                risk VARCHAR(20)
             )
+        """)
 
-            print()
-            print("==============================================")
-            print("          SHOPFLOW ML MODEL LOADED")
-            print("==============================================")
-            print()
-            print("Model:")
-            print(MODEL_PATH)
-            print()
+        connection.commit()
 
-        else:
+        # Add columns to an older live_events table.
+        existing = set()
 
-            print()
-            print("WARNING: ML model file not found.")
-            print()
-            print("Expected:")
-            print(MODEL_PATH)
-            print()
+        cursor.execute("""
+            SHOW COLUMNS FROM live_events
+        """)
+
+        for row in cursor.fetchall():
+            existing.add(row[0])
+
+        additions = {
+            "event_type":
+                "VARCHAR(100)",
+            "product_id":
+                "VARCHAR(255)",
+            "location":
+                "VARCHAR(255)",
+            "traffic_source":
+                "VARCHAR(100)"
+        }
+
+        for column, definition in additions.items():
+
+            if column not in existing:
+
+                cursor.execute(
+                    f"""
+                    ALTER TABLE live_events
+                    ADD COLUMN {column} {definition}
+                    """
+                )
+
+        connection.commit()
+
+        print("MySQL tables ready.")
+
+    except Exception as e:
+        print("MySQL setup error:", e)
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+# =========================================================
+# LIVE EVENTS
+# =========================================================
+
+def load_live_events():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = mysql_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+        cursor.execute("""
+            SELECT *
+            FROM live_events
+            ORDER BY timestamp DESC, id DESC
+            LIMIT 500
+        """)
+
+        rows = cursor.fetchall()
+
+        return pd.DataFrame(rows)
 
     except Exception as e:
 
-        print()
-        print("WARNING: Could not load ML model.")
-        print("Reason:", e)
-        print()
+        print(
+            "Live event loading error:",
+            e
+        )
+
+        return pd.DataFrame()
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
 
 
-# ============================================================
-# HOME
-# ============================================================
+# =========================================================
+# PREDICTION
+# =========================================================
 
-@app.route("/")
-def home():
+def predict_dropout(
+    age,
+    pages,
+    duration,
+    clicks,
+    previous_visits,
+    event
+):
 
-    return render_template(
-        "index.html"
+    # Completed purchase = zero drop-off.
+    if normalize_event(event) == "purchase":
+        return 0.0, "LOW"
+
+    if model is not None:
+
+        try:
+
+            x = pd.DataFrame([{
+                "age": age,
+                "pages_visited": pages,
+                "session_duration": duration,
+                "clicks": clicks,
+                "previous_visits": previous_visits
+            }])
+
+            probability = float(
+                model.predict_proba(
+                    x[FEATURES]
+                )[0][1]
+            )
+
+            probability = max(
+                0,
+                min(
+                    probability,
+                    1
+                )
+            )
+
+        except Exception as e:
+
+            print(
+                "ML prediction error:",
+                e
+            )
+
+            probability = heuristic_prediction(
+                pages,
+                duration,
+                clicks,
+                event
+            )
+
+    else:
+
+        probability = heuristic_prediction(
+            pages,
+            duration,
+            clicks,
+            event
+        )
+
+    if probability >= 0.70:
+        risk = "HIGH"
+
+    elif probability >= 0.40:
+        risk = "MEDIUM"
+
+    else:
+        risk = "LOW"
+
+    return probability, risk
+
+
+def heuristic_prediction(
+    pages,
+    duration,
+    clicks,
+    event
+):
+
+    score = 0.65
+
+    if pages >= 5:
+        score -= 0.15
+
+    if duration >= 180:
+        score -= 0.12
+
+    if clicks >= 5:
+        score -= 0.10
+
+    stage = normalize_event(event)
+
+    if stage == "checkout":
+        score -= 0.10
+
+    elif stage == "add_to_cart":
+        score -= 0.04
+
+    elif stage == "product_view":
+        score += 0.03
+
+    return max(
+        0.05,
+        min(
+            score,
+            0.95
+        )
     )
 
 
-# ============================================================
-# DASHBOARD
-# ============================================================
+def recommendation_for(
+    probability,
+    stage
+):
 
-@app.route("/dashboard")
+    stage = normalize_event(stage)
+
+    if probability >= 0.70:
+
+        if stage == "checkout":
+            return (
+                "High-risk checkout user. "
+                "Reduce checkout friction and "
+                "provide assistance or a reminder."
+            )
+
+        if stage == "add_to_cart":
+            return (
+                "High drop-off risk after cart activity. "
+                "Consider product reassurance or an incentive."
+            )
+
+        return (
+            "High drop-off risk. "
+            "Increase engagement and show relevant recommendations."
+        )
+
+    if probability >= 0.40:
+
+        return (
+            "Medium-risk user. "
+            "Continue monitoring behaviour and improve engagement."
+        )
+
+    return (
+        "User journey is progressing normally. "
+        "Continue monitoring behaviour."
+    )
+
+
+# =========================================================
+# ROUTES
+# =========================================================
+
+@app.route("/")
 def dashboard():
-
     return render_template(
         "dashboard.html"
     )
 
 
-# ============================================================
-# HEALTH
-# ============================================================
+# =========================================================
+# DASHBOARD DATA
+# =========================================================
 
-@app.route("/health")
-def health():
+@app.route("/dashboard-data")
+def dashboard_data():
+
+    df = load_csv()
+
+    if not df.empty:
+
+        df, cols = normalize_dataset(
+            df
+        )
+
+    else:
+        cols = {}
+
+    counts = event_counts(df)
+    funnel = user_funnel(df)
+    dropoff = dropoff_analysis(df)
+
+    total_events = len(df)
+
+    unique_users = (
+        df["_user"].nunique()
+        if not df.empty
+        else 0
+    )
+
+    # -----------------------------------------------------
+    # Recent historical events
+    # -----------------------------------------------------
+
+    recent = []
+
+    if not df.empty:
+
+        recent_df = df.copy()
+
+        recent_df = recent_df.sort_values(
+            "_timestamp",
+            ascending=False,
+            na_position="last"
+        ).head(30)
+
+        for _, row in recent_df.iterrows():
+
+            ts = row["_timestamp"]
+
+            recent.append({
+                "user_id":
+                    clean_value(row["_user"]),
+
+                "event_type":
+                    clean_value(row["_event"]),
+
+                "product_id":
+                    clean_value(row["_product"]),
+
+                "device":
+                    clean_value(row["_device"]),
+
+                "location":
+                    clean_value(row["_location"]),
+
+                "traffic_source":
+                    clean_value(row["_traffic"]),
+
+                "timestamp":
+                    ts.strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                    if pd.notna(ts)
+                    else ""
+            })
+
+    # -----------------------------------------------------
+    # Latest live prediction
+    # -----------------------------------------------------
+
+    live = load_live_events()
+
+    prediction = None
+
+    if not live.empty:
+
+        latest = live.iloc[0]
+
+        drop = float(
+            latest.get(
+                "dropout_probability",
+                0
+            ) or 0
+        )
+
+        prediction = {
+            "user_id":
+                f"U{latest['user_id']}",
+
+            "current_stage":
+                latest.get(
+                    "event_type"
+                )
+                or latest.get(
+                    "current_page",
+                    "—"
+                ),
+
+            "dropoff_probability":
+                round(
+                    drop * 100,
+                    2
+                ),
+
+            "purchase_probability":
+                round(
+                    (1 - drop) * 100,
+                    2
+                ),
+
+            "risk_level":
+                latest.get(
+                    "risk",
+                    "LOW"
+                ),
+
+            "device":
+                latest.get(
+                    "device",
+                    "—"
+                ),
+
+            "location":
+                latest.get(
+                    "location",
+                    "—"
+                ),
+
+            "traffic_source":
+                latest.get(
+                    "traffic_source",
+                    "—"
+                ),
+
+            "recommendation":
+                recommendation_for(
+                    drop,
+                    latest.get(
+                        "event_type",
+                        "Visit"
+                    )
+                ),
+
+            "prediction_source":
+                "Random Forest ML"
+                if model is not None
+                else "ML fallback"
+        }
 
     return jsonify({
 
-        "status": "healthy",
+        "total_events":
+            total_events,
 
-        "application": "ShopFlow",
+        "unique_users":
+            unique_users,
 
-        "database": DATABASE,
+        "event_counts":
+            counts,
+
+        "funnel":
+            funnel,
+
+        "dropoff":
+            dropoff,
+
+        "recent_events":
+            recent,
+
+        "prediction":
+            prediction,
 
         "ml_model_loaded":
-            ml_model is not None
+            model is not None,
 
+        "csv_columns":
+            list(df.columns)
+            if not df.empty
+            else []
     })
 
 
-# ============================================================
-# GET USER EVENTS
-# ============================================================
+# =========================================================
+# LIVE DATA
+# =========================================================
 
-def get_user_events(user_id):
+@app.route("/api/live")
+def api_live():
 
-    conn = get_db_connection()
+    df = load_live_events()
 
-    cursor = conn.cursor()
+    if df.empty:
+        return jsonify({
+            "events": [],
+            "count": 0
+        })
 
-    cursor.execute("""
-        SELECT *
-        FROM events
-        WHERE user_id = ?
-        ORDER BY id ASC
-    """, (
-        user_id,
-    ))
+    records = []
 
-    rows = cursor.fetchall()
+    for _, row in df.iterrows():
 
-    conn.close()
+        uid = clean_value(
+            row.get(
+                "user_id"
+            )
+        )
 
-    return [
-        dict(row)
-        for row in rows
-    ]
+        if uid.isdigit():
+            uid = f"U{uid}"
+
+        timestamp = row.get(
+            "timestamp"
+        )
+
+        if isinstance(
+            timestamp,
+            datetime
+        ):
+            timestamp = timestamp.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+        else:
+            timestamp = clean_value(
+                timestamp
+            )
+
+        records.append({
+
+            "user_id":
+                uid,
+
+            "event_type":
+                clean_value(
+                    row.get(
+                        "event_type"
+                    )
+                    or row.get(
+                        "current_page"
+                    )
+                ),
+
+            "product_id":
+                clean_value(
+                    row.get(
+                        "product_id"
+                    )
+                ),
+
+            "device":
+                clean_value(
+                    row.get(
+                        "device"
+                    )
+                ),
+
+            "location":
+                clean_value(
+                    row.get(
+                        "location"
+                    )
+                ),
+
+            "traffic_source":
+                clean_value(
+                    row.get(
+                        "traffic_source"
+                    )
+                ),
+
+            "timestamp":
+                timestamp
+        })
+
+    return jsonify({
+        "events": records[:100],
+        "count": len(records)
+    })
 
 
-# ============================================================
-# CURRENT USER STAGE
-# ============================================================
+# =========================================================
+# NEXT USER
+# =========================================================
 
-def get_current_stage(events):
+@app.route("/api/next-user")
+def next_user():
 
-    if not events:
-
-        return "visit"
-
-    latest_event = events[-1]["event_type"]
-
-    stage_map = {
-
-        "visit":
-            "visit",
-
-        "signup":
-            "signup",
-
-        "product_view":
-            "product_view",
-
-        "add_to_cart":
-            "add_to_cart",
-
-        "view_cart":
-            "view_cart",
-
-        "checkout":
-            "checkout",
-
-        "purchase":
-            "purchase",
-
-        "remove_from_cart":
-            "remove_from_cart"
-
-    }
-
-    return stage_map.get(
-        latest_event,
-        "visit"
-    )
-
-
-# ============================================================
-# SESSION DURATION
-# ============================================================
-
-def get_session_duration(events):
-
-    if len(events) < 2:
-
-        return 0
+    connection = None
+    cursor = None
 
     try:
 
-        first_time = datetime.fromisoformat(
-            events[0]["timestamp"]
+        connection = mysql_connection()
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            SELECT COALESCE(
+                MAX(user_id),
+                1000
+            )
+            FROM live_events
+        """)
+
+        result = cursor.fetchone()
+
+        maximum = int(
+            result[0]
+            if result and result[0]
+            else 1000
         )
 
-        last_time = datetime.fromisoformat(
-            events[-1]["timestamp"]
-        )
-
-        duration = (
-            last_time - first_time
-        ).total_seconds()
-
-        return max(
-            0,
-            int(duration)
-        )
+        return jsonify({
+            "user_id":
+                f"U{maximum + 1}"
+        })
 
     except Exception:
 
-        return 0
-
-
-# ============================================================
-# USER FEATURES
-# ============================================================
-
-def get_user_features(events):
-
-    event_types = [
-        event["event_type"]
-        for event in events
-    ]
-
-    return {
-
-        "visit_count":
-            event_types.count("visit"),
-
-        "signup_count":
-            event_types.count("signup"),
-
-        "product_view_count":
-            event_types.count("product_view"),
-
-        "cart_count":
-            event_types.count("add_to_cart"),
-
-        "view_cart_count":
-            event_types.count("view_cart"),
-
-        "checkout_count":
-            event_types.count("checkout"),
-
-        "purchase_count":
-            event_types.count("purchase"),
-
-        "remove_count":
-            event_types.count("remove_from_cart"),
-
-        "current_stage":
-            get_current_stage(events),
-
-        "session_duration_seconds":
-            get_session_duration(events),
-
-        "event_number":
-            len(events)
-
-    }
-
-
-# ============================================================
-# RECOMMENDATION ENGINE
-# ============================================================
-
-def generate_recommendation(
-    dropoff_probability,
-    purchase_probability,
-    current_stage,
-    features,
-    device
-):
-
-    if current_stage == "purchase":
-
-        return {
-
-            "action":
-                "Purchase completed",
-
-            "recommendation":
-                "User completed the purchase successfully. "
-                "Consider post-purchase engagement, "
-                "cross-selling and retention campaigns.",
-
-            "priority":
-                "LOW"
-
-        }
-
-
-    if dropoff_probability >= 70:
-
-        if current_stage == "checkout":
-
-            recommendation = (
-                "High checkout drop-off risk. "
-                "Simplify checkout, reduce form friction, "
-                "show trust signals and offer quick payment options."
-            )
-
-        elif current_stage in [
-            "view_cart",
-            "add_to_cart"
-        ]:
-
-            recommendation = (
-                "High cart abandonment risk. "
-                "Show cart reminders, delivery information, "
-                "trust signals and a limited-time incentive."
-            )
-
-        elif current_stage == "product_view":
-
-            recommendation = (
-                "High browsing drop-off risk. "
-                "Show related products, reviews, offers "
-                "and clearer Add to Cart actions."
-            )
-
-        else:
-
-            recommendation = (
-                "High drop-off risk. "
-                "Improve engagement and guide the user "
-                "towards the next journey stage."
-            )
-
-        return {
-
-            "action":
-                "Immediate intervention",
-
-            "recommendation":
-                recommendation,
-
-            "priority":
-                "HIGH"
-
-        }
-
-
-    if dropoff_probability >= 40:
-
-        if current_stage == "product_view":
-
-            recommendation = (
-                "User is evaluating products. "
-                "Highlight product benefits, ratings, "
-                "reviews and relevant recommendations."
-            )
-
-        elif current_stage in [
-            "add_to_cart",
-            "view_cart"
-        ]:
-
-            recommendation = (
-                "User has shopping intent. "
-                "Use cart reminders and make checkout "
-                "easy and transparent."
-            )
-
-        elif current_stage == "checkout":
-
-            recommendation = (
-                "User reached checkout but still has "
-                "moderate drop-off risk. "
-                "Provide clear payment and delivery information."
-            )
-
-        else:
-
-            recommendation = (
-                "Increase engagement and provide "
-                "clear guidance towards the next stage."
-            )
-
-        return {
-
-            "action":
-                "Engagement intervention",
-
-            "recommendation":
-                recommendation,
-
-            "priority":
-                "MEDIUM"
-
-        }
-
-
-    if purchase_probability >= 70:
-
-        return {
-
-            "action":
-                "Encourage conversion",
-
-            "recommendation":
-                "User shows strong purchase intent. "
-                "Keep the journey simple and encourage "
-                "purchase completion.",
-
-            "priority":
-                "LOW"
-
-        }
-
-
-    return {
-
-        "action":
-            "Continue monitoring",
-
-        "recommendation":
-            "User journey is progressing normally. "
-            "Continue monitoring behaviour.",
-
-        "priority":
-            "LOW"
-
-    }
-
-
-# ============================================================
-# FALLBACK PREDICTION
-# ============================================================
-
-def fallback_prediction(features):
-
-    stage = features[
-        "current_stage"
-    ]
-
-    event_number = features[
-        "event_number"
-    ]
-
-    duration = features[
-        "session_duration_seconds"
-    ]
-
-
-    if stage == "purchase":
-
-        purchase_probability = 98
-        dropoff_probability = 2
-
-    elif stage == "checkout":
-
-        purchase_probability = 80
-        dropoff_probability = 20
-
-    elif stage in [
-        "add_to_cart",
-        "view_cart"
-    ]:
-
-        purchase_probability = 65
-        dropoff_probability = 35
-
-    elif stage == "product_view":
-
-        purchase_probability = 45
-        dropoff_probability = 55
-
-    else:
-
-        purchase_probability = 30
-        dropoff_probability = 70
-
-
-    if event_number >= 5:
-
-        purchase_probability += 5
-        dropoff_probability -= 5
-
-
-    if (
-        duration > 600
-        and stage != "purchase"
-    ):
-
-        purchase_probability -= 5
-        dropoff_probability += 5
-
-
-    purchase_probability = max(
-        0,
-        min(
-            100,
-            purchase_probability
-        )
-    )
-
-    dropoff_probability = max(
-        0,
-        min(
-            100,
-            dropoff_probability
-        )
-    )
-
-
-    if dropoff_probability >= 70:
-
-        risk_level = "HIGH"
-
-    elif dropoff_probability >= 40:
-
-        risk_level = "MEDIUM"
-
-    else:
-
-        risk_level = "LOW"
-
-
-    return {
-
-        "dropoff_probability":
-            round(
-                dropoff_probability,
-                2
-            ),
-
-        "purchase_probability":
-            round(
-                purchase_probability,
-                2
-            ),
-
-        "risk_level":
-            risk_level,
-
-        "prediction_source":
-            "fallback"
-
-    }
-
-
-# ============================================================
-# RANDOM FOREST ML PREDICTION
-# ============================================================
-
-def generate_ml_prediction(user_id):
-
-    events = get_user_events(
-        user_id
-    )
-
-
-    if not events:
-
-        return {
-
+        return jsonify({
             "user_id":
-                user_id,
+                "U1001"
+        })
 
-            "current_stage":
-                "visit",
+    finally:
 
-            "dropoff_probability":
-                0,
+        if cursor:
+            cursor.close()
 
-            "purchase_probability":
-                0,
+        if connection:
+            connection.close()
 
-            "risk_level":
-                "LOW",
 
-            "prediction_source":
-                "waiting",
-
-            "recommendation":
-                "Waiting for user activity.",
-
-            "action":
-                "Wait",
-
-            "priority":
-                "LOW"
-
-        }
-
-
-    features = get_user_features(
-        events
-    )
-
-
-    latest_event = events[-1]
-
-
-    device = (
-        latest_event.get("device")
-        or "desktop"
-    )
-
-    location = (
-        latest_event.get("location")
-        or "India"
-    )
-
-    traffic_source = (
-        latest_event.get("traffic_source")
-        or "direct"
-    )
-
-
-    # ========================================================
-    # RANDOM FOREST
-    # ========================================================
-
-    if (
-        ml_model is not None
-        and ML_LIBRARIES_AVAILABLE
-    ):
-
-        try:
-
-            input_data = pd.DataFrame([{
-
-                "device":
-                    device,
-
-                "location":
-                    location,
-
-                "traffic_source":
-                    traffic_source,
-
-                "visit_count":
-                    features[
-                        "visit_count"
-                    ],
-
-                "signup_count":
-                    features[
-                        "signup_count"
-                    ],
-
-                "cart_count":
-                    features[
-                        "cart_count"
-                    ],
-
-                "checkout_count":
-                    features[
-                        "checkout_count"
-                    ],
-
-                "current_stage":
-                    features[
-                        "current_stage"
-                    ],
-
-                "session_duration_seconds":
-                    features[
-                        "session_duration_seconds"
-                    ],
-
-                "event_number":
-                    features[
-                        "event_number"
-                    ]
-
-            }])
-
-
-            probabilities = (
-                ml_model.predict_proba(
-                    input_data
-                )[0]
-            )
-
-
-            classes = list(
-                ml_model.classes_
-            )
-
-
-            if 1 in classes:
-
-                purchase_probability = (
-                    probabilities[
-                        classes.index(1)
-                    ] * 100
-                )
-
-            else:
-
-                purchase_probability = 0
-
-
-            dropoff_probability = (
-                100 -
-                purchase_probability
-            )
-
-
-            prediction_source = (
-                "Random Forest ML model"
-            )
-
-
-        except Exception as e:
-
-            print()
-            print("ML prediction error:")
-            print(e)
-            print()
-
-            fallback = fallback_prediction(
-                features
-            )
-
-            purchase_probability = (
-                fallback[
-                    "purchase_probability"
-                ]
-            )
-
-            dropoff_probability = (
-                fallback[
-                    "dropoff_probability"
-                ]
-            )
-
-            prediction_source = (
-                "fallback_after_ml_error"
-            )
-
-    else:
-
-        fallback = fallback_prediction(
-            features
-        )
-
-        purchase_probability = (
-            fallback[
-                "purchase_probability"
-            ]
-        )
-
-        dropoff_probability = (
-            fallback[
-                "dropoff_probability"
-            ]
-        )
-
-        prediction_source = (
-            fallback[
-                "prediction_source"
-            ]
-        )
-
-
-    purchase_probability = round(
-        max(
-            0,
-            min(
-                100,
-                purchase_probability
-            )
-        ),
-        2
-    )
-
-
-    dropoff_probability = round(
-        max(
-            0,
-            min(
-                100,
-                dropoff_probability
-            )
-        ),
-        2
-    )
-
-
-    if dropoff_probability >= 70:
-
-        risk_level = "HIGH"
-
-    elif dropoff_probability >= 40:
-
-        risk_level = "MEDIUM"
-
-    else:
-
-        risk_level = "LOW"
-
-
-    recommendation_data = (
-        generate_recommendation(
-
-            dropoff_probability,
-
-            purchase_probability,
-
-            features[
-                "current_stage"
-            ],
-
-            features,
-
-            device
-
-        )
-    )
-
-
-    return {
-
-        "user_id":
-            user_id,
-
-        "current_stage":
-            features[
-                "current_stage"
-            ],
-
-        "event_number":
-            features[
-                "event_number"
-            ],
-
-        "session_duration_seconds":
-            features[
-                "session_duration_seconds"
-            ],
-
-        "visit_count":
-            features[
-                "visit_count"
-            ],
-
-        "signup_count":
-            features[
-                "signup_count"
-            ],
-
-        "product_view_count":
-            features[
-                "product_view_count"
-            ],
-
-        "cart_count":
-            features[
-                "cart_count"
-            ],
-
-        "view_cart_count":
-            features[
-                "view_cart_count"
-            ],
-
-        "checkout_count":
-            features[
-                "checkout_count"
-            ],
-
-        "purchase_count":
-            features[
-                "purchase_count"
-            ],
-
-        "remove_count":
-            features[
-                "remove_count"
-            ],
-
-        "device":
-            device,
-
-        "location":
-            location,
-
-        "traffic_source":
-            traffic_source,
-
-        "dropoff_probability":
-            dropoff_probability,
-
-        "purchase_probability":
-            purchase_probability,
-
-        "risk_level":
-            risk_level,
-
-        "prediction_source":
-            prediction_source,
-
-        "action":
-            recommendation_data[
-                "action"
-            ],
-
-        "recommendation":
-            recommendation_data[
-                "recommendation"
-            ],
-
-        "priority":
-            recommendation_data[
-                "priority"
-            ]
-
-    }
-
-
-# ============================================================
-# TRACK EVENT
-# ============================================================
+# =========================================================
+# PREDICT API
+# =========================================================
 
 @app.route(
-    "/track-event",
+    "/api/predict",
     methods=["POST"]
 )
-def track_event():
+def api_predict():
 
-    data = (
-        request.get_json(
-            silent=True
+    data = request.get_json(
+        force=True
+    ) or {}
+
+    probability, risk = predict_dropout(
+
+        int(
+            data.get(
+                "age",
+                25
+            )
+        ),
+
+        int(
+            data.get(
+                "pages_visited",
+                1
+            )
+        ),
+
+        int(
+            data.get(
+                "session_duration",
+                0
+            )
+        ),
+
+        int(
+            data.get(
+                "clicks",
+                0
+            )
+        ),
+
+        int(
+            data.get(
+                "previous_visits",
+                0
+            )
+        ),
+
+        data.get(
+            "event",
+            "Visit"
         )
-        or {}
     )
 
+    return jsonify({
 
-    user_id = data.get(
-        "user_id"
+        "dropoff_probability":
+            round(
+                probability * 100,
+                2
+            ),
+
+        "purchase_probability":
+            round(
+                (1 - probability) * 100,
+                2
+            ),
+
+        "risk":
+            risk,
+
+        "prediction_source":
+            "Random Forest ML"
+            if model is not None
+            else "ML fallback"
+    })
+
+
+# =========================================================
+# LIVE EVENT
+# =========================================================
+
+@app.route(
+    "/api/event",
+    methods=["POST"]
+)
+def receive_event():
+
+    data = request.get_json(
+        force=True
+    ) or {}
+
+    event = data.get(
+        "event_type",
+        data.get(
+            "event",
+            data.get(
+                "current_page",
+                "Visit"
+            )
+        )
     )
 
-    event_type = data.get(
-        "event_type"
+    user_id = str(
+        data.get(
+            "user_id",
+            "1001"
+        )
     )
+
+    if user_id.startswith("U"):
+        user_id = user_id[1:]
+
+    try:
+        user_id_int = int(user_id)
+    except:
+        user_id_int = 1001
 
     product_id = data.get(
-        "product_id"
+        "product_id",
+        data.get(
+            "product",
+            ""
+        )
     )
 
     device = data.get(
         "device",
-        "desktop"
+        "Desktop"
     )
 
     location = data.get(
@@ -1124,600 +1475,303 @@ def track_event():
 
     traffic_source = data.get(
         "traffic_source",
-        "direct"
+        "Direct"
     )
 
-
-    if not user_id:
-
-        return jsonify({
-
-            "success":
-                False,
-
-            "message":
-                "user_id is required"
-
-        }), 400
-
-
-    if not event_type:
-
-        return jsonify({
-
-            "success":
-                False,
-
-            "message":
-                "event_type is required"
-
-        }), 400
-
-
-    timestamp = (
-        datetime.now().isoformat()
-    )
-
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-
-    cursor.execute("""
-        INSERT INTO events
-        (
-            user_id,
-            event_type,
-            product_id,
-            device,
-            location,
-            traffic_source,
-            timestamp
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-
-        user_id,
-
-        event_type,
-
-        product_id,
-
-        device,
-
-        location,
-
-        traffic_source,
-
-        timestamp
-
-    ))
-
-
-    conn.commit()
-
-    event_id = (
-        cursor.lastrowid
-    )
-
-    conn.close()
-
-
-    print(
-        f"[EVENT] {event_type} | "
-        f"User: {user_id} | "
-        f"Product: {product_id}"
-    )
-
-
-    prediction = (
-        generate_ml_prediction(
-            user_id
+    age = int(
+        data.get(
+            "age",
+            25
         )
     )
 
-
-    return jsonify({
-
-        "success":
-            True,
-
-        "message":
-            "Event tracked successfully",
-
-        "event_id":
-            event_id,
-
-        "user_id":
-            user_id,
-
-        "event_type":
-            event_type,
-
-        "product_id":
-            product_id,
-
-        "timestamp":
-            timestamp,
-
-        "prediction":
-            prediction
-
-    })
-
-
-# ============================================================
-# ALL LIVE EVENTS
-# ============================================================
-
-@app.route(
-    "/api/events"
-)
-def get_events():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT *
-        FROM events
-        ORDER BY id DESC
-    """)
-
-    rows = cursor.fetchall()
-
-    conn.close()
-
-
-    return jsonify([
-        dict(row)
-        for row in rows
-    ])
-
-
-# ============================================================
-# ANALYTICS SUMMARY
-# ============================================================
-
-@app.route(
-    "/api/analytics/summary"
-)
-def analytics_summary():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-
-    cursor.execute(
-        "SELECT COUNT(*) AS count FROM events"
-    )
-
-    total_events = (
-        cursor.fetchone()["count"]
-    )
-
-
-    cursor.execute(
-        "SELECT COUNT(DISTINCT user_id) AS count FROM events"
-    )
-
-    unique_users = (
-        cursor.fetchone()["count"]
-    )
-
-
-    event_types = [
-        "product_view",
-        "add_to_cart",
-        "view_cart",
-        "checkout",
-        "purchase",
-        "remove_from_cart"
-    ]
-
-
-    counts = {}
-
-
-    for event_type in event_types:
-
-        cursor.execute("""
-            SELECT COUNT(*) AS count
-            FROM events
-            WHERE event_type = ?
-        """, (
-            event_type,
-        ))
-
-        counts[event_type] = (
-            cursor.fetchone()["count"]
+    pages = int(
+        data.get(
+            "pages_visited",
+            1
         )
+    )
 
+    duration = int(
+        data.get(
+            "session_duration",
+            0
+        )
+    )
 
-    conn.close()
+    clicks = int(
+        data.get(
+            "clicks",
+            0
+        )
+    )
 
+    previous_visits = int(
+        data.get(
+            "previous_visits",
+            0
+        )
+    )
 
-    return jsonify({
+    probability, risk = predict_dropout(
 
-        "success":
-            True,
+        age,
+        pages,
+        duration,
+        clicks,
+        previous_visits,
+        event
+    )
 
-        "total_events":
-            total_events,
-
-        "unique_users":
-            unique_users,
-
-        "product_views":
-            counts["product_view"],
-
-        "add_to_cart":
-            counts["add_to_cart"],
-
-        "view_cart":
-            counts["view_cart"],
-
-        "checkout":
-            counts["checkout"],
-
-        "purchases":
-            counts["purchase"],
-
-        "remove_from_cart":
-            counts["remove_from_cart"],
-
-        "ml_model_loaded":
-            ml_model is not None
-
-    })
-
-
-# ============================================================
-# FUNNEL ANALYTICS
-# ============================================================
-
-@app.route(
-    "/api/analytics/funnel"
-)
-def funnel():
+    connection = None
+    cursor = None
 
     try:
 
-        conn = get_db_connection()
+        connection = mysql_connection()
+        cursor = connection.cursor()
 
-        cursor = conn.cursor()
-
-
-        stages = [
-            "visit",
-            "product_view",
-            "add_to_cart",
-            "view_cart",
-            "checkout",
-            "purchase"
-        ]
-
-
-        funnel_data = {}
-
-        for event_type in stages:
-
-            cursor.execute("""
-                SELECT COUNT(DISTINCT user_id) AS count
-                FROM events
-                WHERE event_type = ?
-            """, (
+        cursor.execute("""
+            INSERT INTO live_events
+            (
+                timestamp,
+                user_id,
                 event_type,
-            ))
-
-            funnel_data[event_type] = (
-                cursor.fetchone()["count"]
+                product_id,
+                device,
+                location,
+                traffic_source,
+                current_page,
+                age,
+                pages_visited,
+                session_duration,
+                clicks,
+                previous_visits,
+                dropout_probability,
+                risk
             )
+            VALUES
+            (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s
+            )
+        """, (
 
+            datetime.now(),
 
-        conn.close()
+            user_id_int,
 
+            event,
+
+            product_id,
+
+            device,
+
+            location,
+
+            traffic_source,
+
+            event,
+
+            age,
+
+            pages,
+
+            duration,
+
+            clicks,
+
+            previous_visits,
+
+            probability,
+
+            risk
+        ))
+
+        connection.commit()
 
         return jsonify({
 
             "success":
                 True,
 
-            "funnel":
-                funnel_data
+            "user_id":
+                f"U{user_id_int}",
 
+            "event":
+                event,
+
+            "product_id":
+                product_id,
+
+            "device":
+                device,
+
+            "location":
+                location,
+
+            "traffic_source":
+                traffic_source,
+
+            "dropoff_probability":
+                round(
+                    probability * 100,
+                    2
+                ),
+
+            "risk":
+                risk
         })
-
 
     except Exception as e:
 
-        return jsonify({
-
-            "success":
-                False,
-
-            "error":
-                str(e)
-
-        }), 500
-
-
-# ============================================================
-# DASHBOARD DATA
-#
-# IMPORTANT:
-# This uses ONLY live shopflow.db events.
-# It DOES NOT include the 50,014 historical dataset.
-# ============================================================
-
-@app.route(
-    "/dashboard-data"
-)
-def dashboard_data():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-
-    cursor.execute(
-        "SELECT COUNT(*) AS count FROM events"
-    )
-
-    total_events = (
-        cursor.fetchone()["count"]
-    )
-
-
-    cursor.execute(
-        "SELECT COUNT(DISTINCT user_id) AS count FROM events"
-    )
-
-    unique_users = (
-        cursor.fetchone()["count"]
-    )
-
-
-    # --------------------------------------------------------
-    # EVENT COUNTS
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT
-            event_type,
-            COUNT(*) AS count
-        FROM events
-        GROUP BY event_type
-        ORDER BY count DESC
-    """)
-
-    rows = cursor.fetchall()
-
-
-    event_counts = {
-
-        row["event_type"]:
-            row["count"]
-
-        for row in rows
-
-    }
-
-
-    # --------------------------------------------------------
-    # FUNNEL
-    # --------------------------------------------------------
-
-    funnel = {}
-
-    funnel_events = [
-        "visit",
-        "product_view",
-        "add_to_cart",
-        "view_cart",
-        "checkout",
-        "purchase"
-    ]
-
-
-    for event_type in funnel_events:
-
-        cursor.execute("""
-            SELECT COUNT(DISTINCT user_id) AS count
-            FROM events
-            WHERE event_type = ?
-        """, (
-            event_type,
-        ))
-
-        funnel[event_type] = (
-            cursor.fetchone()["count"]
+        print(
+            "Event insert error:",
+            e
         )
 
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-    # --------------------------------------------------------
-    # DEVICES
-    # --------------------------------------------------------
+    finally:
 
-    cursor.execute("""
-        SELECT
-            device,
-            COUNT(*) AS count
-        FROM events
-        WHERE device IS NOT NULL
-        GROUP BY device
-    """)
+        if cursor:
+            cursor.close()
 
-    devices = {
-
-        row["device"]:
-            row["count"]
-
-        for row in cursor.fetchall()
-
-    }
+        if connection:
+            connection.close()
 
 
-    # --------------------------------------------------------
-    # TRAFFIC SOURCES
-    # --------------------------------------------------------
+# =========================================================
+# COMPLETE DATASET ANALYSIS
+# =========================================================
 
-    cursor.execute("""
-        SELECT
-            traffic_source,
-            COUNT(*) AS count
-        FROM events
-        WHERE traffic_source IS NOT NULL
-        GROUP BY traffic_source
-    """)
+@app.route(
+    "/api/ecommerce-dataset-detailed"
+)
+def ecommerce_dataset_detailed():
 
-    traffic_sources = {
+    df = load_csv()
 
-        row["traffic_source"]:
-            row["count"]
+    if df.empty:
 
-        for row in cursor.fetchall()
+        return jsonify({
+            "success": True,
+            "message":
+                "CSV dataset not found or empty.",
+            "total_events": 0,
+            "unique_users": 0,
+            "columns": [],
+            "rows": [],
+            "event_counts": {},
+            "dropoff": {},
+            "traffic_sources": {},
+            "devices": {},
+            "time": {}
+        })
 
-    }
-
-
-    # --------------------------------------------------------
-    # PRODUCT VIEWS
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT
-            product_id,
-            COUNT(*) AS count
-        FROM events
-        WHERE event_type = 'product_view'
-        AND product_id IS NOT NULL
-        GROUP BY product_id
-        ORDER BY count DESC
-    """)
-
-    product_views = {
-
-        row["product_id"]:
-            row["count"]
-
-        for row in cursor.fetchall()
-
-    }
-
-
-    # --------------------------------------------------------
-    # ADD TO CART PRODUCTS
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT
-            product_id,
-            COUNT(*) AS count
-        FROM events
-        WHERE event_type = 'add_to_cart'
-        AND product_id IS NOT NULL
-        GROUP BY product_id
-        ORDER BY count DESC
-    """)
-
-    add_to_cart_products = {
-
-        row["product_id"]:
-            row["count"]
-
-        for row in cursor.fetchall()
-
-    }
-
-
-    # --------------------------------------------------------
-    # REMOVE FROM CART PRODUCTS
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT
-            product_id,
-            COUNT(*) AS count
-        FROM events
-        WHERE event_type = 'remove_from_cart'
-        AND product_id IS NOT NULL
-        GROUP BY product_id
-        ORDER BY count DESC
-    """)
-
-    remove_from_cart_products = {
-
-        row["product_id"]:
-            row["count"]
-
-        for row in cursor.fetchall()
-
-    }
-
-
-    # --------------------------------------------------------
-    # RECENT LIVE EVENTS
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT *
-        FROM events
-        ORDER BY id DESC
-        LIMIT 20
-    """)
-
-    recent_events = [
-
-        dict(row)
-
-        for row in cursor.fetchall()
-
-    ]
-
-
-    # --------------------------------------------------------
-    # LATEST USER
-    # --------------------------------------------------------
-
-    cursor.execute("""
-        SELECT user_id
-        FROM events
-        ORDER BY id DESC
-        LIMIT 1
-    """)
-
-    row = cursor.fetchone()
-
-
-    latest_user = (
-        row["user_id"]
-        if row
-        else None
+    normalized, detected = normalize_dataset(
+        df
     )
 
+    counts = event_counts(
+        normalized
+    )
 
-    conn.close()
+    unique_users = int(
+        normalized["_user"].nunique()
+    )
 
+    # -----------------------------------------------------
+    # Actual CSV rows
+    # -----------------------------------------------------
 
-    # --------------------------------------------------------
-    # LIVE ML PREDICTION
-    # --------------------------------------------------------
+    rows = []
 
-    prediction = None
+    display_df = df.copy().head(300)
 
+    for _, row in display_df.iterrows():
 
-    if latest_user:
+        item = {}
 
-        prediction = (
-            generate_ml_prediction(
-                latest_user
+        for col in df.columns:
+
+            value = row[col]
+
+            if pd.isna(value):
+                item[str(col)] = ""
+            else:
+                item[str(col)] = str(value)
+
+        rows.append(item)
+
+    # -----------------------------------------------------
+    # Traffic sources
+    # -----------------------------------------------------
+
+    traffic = {}
+
+    if detected["traffic"]:
+
+        values = (
+            normalized[
+                "_traffic"
+            ]
+            .replace(
+                "",
+                "Unknown"
             )
         )
 
+        traffic = {
+            str(k): int(v)
+            for k, v in
+            values.value_counts().items()
+        }
+
+    # -----------------------------------------------------
+    # Devices
+    # -----------------------------------------------------
+
+    devices = {}
+
+    if detected["device"]:
+
+        values = (
+            normalized[
+                "_device"
+            ]
+            .replace(
+                "",
+                "Unknown"
+            )
+        )
+
+        devices = {
+            str(k): int(v)
+            for k, v in
+            values.value_counts().items()
+        }
+
+    # -----------------------------------------------------
+    # Dataset date/time
+    # -----------------------------------------------------
+
+    time_data = time_analysis(
+        normalized
+    )
+
+    # -----------------------------------------------------
+    # Actual detected columns
+    # -----------------------------------------------------
+
+    actual_columns = [
+        str(c)
+        for c in df.columns
+    ]
 
     return jsonify({
 
@@ -1725,583 +1779,54 @@ def dashboard_data():
             True,
 
         "total_events":
-            total_events,
+            len(df),
 
         "unique_users":
             unique_users,
 
         "event_counts":
-            event_counts,
+            counts,
 
-        "funnel":
-            funnel,
+        "columns":
+            actual_columns,
+
+        "rows":
+            rows,
+
+        "detected_columns": {
+            k:
+                str(v)
+                if v
+                else None
+            for k, v in detected.items()
+        },
+
+        "dropoff":
+            dropoff_analysis(
+                normalized
+            ),
+
+        "traffic_sources":
+            traffic,
 
         "devices":
             devices,
 
-        "traffic_sources":
-            traffic_sources,
-
-        "product_views":
-            product_views,
-
-        "add_to_cart_products":
-            add_to_cart_products,
-
-        "remove_from_cart_products":
-            remove_from_cart_products,
-
-        "recent_events":
-            recent_events,
-
-        "prediction":
-            prediction,
-
-        "ml_model_loaded":
-            ml_model is not None,
-
-        "latest_user":
-            latest_user
-
+        "time":
+            time_data
     })
 
 
-# ============================================================
-# ML PREDICTION API
-# ============================================================
-
-@app.route(
-    "/api/ml/prediction"
-)
-def ml_prediction():
-
-    user_id = request.args.get(
-        "user_id"
-    )
-
-
-    if not user_id:
-
-        conn = get_db_connection()
-
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT user_id
-            FROM events
-            ORDER BY id DESC
-            LIMIT 1
-        """)
-
-        row = cursor.fetchone()
-
-        conn.close()
-
-
-        if row:
-
-            user_id = row["user_id"]
-
-        else:
-
-            return jsonify({
-
-                "success":
-                    True,
-
-                "prediction":
-                    None,
-
-                "message":
-                    "No user activity available yet."
-
-            })
-
-
-    prediction = (
-        generate_ml_prediction(
-            user_id
-        )
-    )
-
-
-    return jsonify({
-
-        "success":
-            True,
-
-        "prediction":
-            prediction
-
-    })
-
-
-# ============================================================
-# LATEST PREDICTION
-# ============================================================
-
-@app.route(
-    "/api/latest-prediction"
-)
-def latest_prediction():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT user_id
-        FROM events
-        ORDER BY id DESC
-        LIMIT 1
-    """)
-
-    row = cursor.fetchone()
-
-    conn.close()
-
-
-    if not row:
-
-        return jsonify({
-
-            "success":
-                True,
-
-            "prediction":
-                None
-
-        })
-
-
-    prediction = (
-        generate_ml_prediction(
-            row["user_id"]
-        )
-    )
-
-
-    return jsonify({
-
-        "success":
-            True,
-
-        "prediction":
-            prediction
-
-    })
-
-
-# ============================================================
-# ML STATUS
-# ============================================================
-
-@app.route(
-    "/api/ml-status"
-)
-def ml_status():
-
-    if ml_model is not None:
-
-        return jsonify({
-
-            "success":
-                True,
-
-            "ml_model_loaded":
-                True,
-
-            "model_file":
-                MODEL_PATH,
-
-            "message":
-                "Random Forest ML model loaded successfully."
-
-        })
-
-
-    return jsonify({
-
-        "success":
-            False,
-
-        "ml_model_loaded":
-            False,
-
-        "model_file":
-            MODEL_PATH,
-
-        "message":
-            "ML model is not loaded. "
-            "The system is using fallback prediction."
-
-    })
-
-
-# ============================================================
-# RECOMMENDATION API
-# ============================================================
-
-@app.route(
-    "/api/recommendation"
-)
-def recommendation_api():
-
-    response = latest_prediction()
-
-    data = response.get_json()
-
-    prediction = data.get(
-        "prediction"
-    )
-
-
-    if not prediction:
-
-        return jsonify({
-
-            "success":
-                True,
-
-            "recommendation":
-                None
-
-        })
-
-
-    return jsonify({
-
-        "success":
-            True,
-
-        "user_id":
-            prediction["user_id"],
-
-        "risk_level":
-            prediction["risk_level"],
-
-        "action":
-            prediction["action"],
-
-        "recommendation":
-            prediction["recommendation"],
-
-        "priority":
-            prediction["priority"]
-
-    })
-
-
-# ============================================================
-# E-COMMERCE DATASET
-#
-# THIS IS SEPARATE FROM LIVE EVENTS.
-#
-# File:
-# data/ecommerce_events.csv
-#
-# Expected:
-# 50,014 events
-# ============================================================
-
-def get_ecommerce_dataset_stats():
-
-    result = {
-
-        "success":
-            False,
-
-        "total_events":
-            0,
-
-        "unique_users":
-            0,
-
-        "event_counts":
-            {},
-
-        "dataset_file":
-            ECOMMERCE_DATASET_PATH
-
-    }
-
-
-    if not os.path.exists(
-        ECOMMERCE_DATASET_PATH
-    ):
-
-        result["message"] = (
-            "ecommerce_events.csv not found."
-        )
-
-        return result
-
-
-    try:
-
-        unique_users = set()
-
-        event_counts = {}
-
-        total_events = 0
-
-
-        with open(
-            ECOMMERCE_DATASET_PATH,
-            "r",
-            encoding="utf-8-sig",
-            newline=""
-        ) as file:
-
-            reader = csv.DictReader(
-                file
-            )
-
-
-            for row in reader:
-
-                total_events += 1
-
-
-                user_id = (
-                    row.get(
-                        "user_id",
-                        ""
-                    )
-                    .strip()
-                )
-
-                event_type = (
-                    row.get(
-                        "event_type",
-                        ""
-                    )
-                    .strip()
-                    .lower()
-                )
-
-
-                if user_id:
-
-                    unique_users.add(
-                        user_id
-                    )
-
-
-                if event_type:
-
-                    event_counts[
-                        event_type
-                    ] = (
-                        event_counts.get(
-                            event_type,
-                            0
-                        ) + 1
-                    )
-
-
-        result.update({
-
-            "success":
-                True,
-
-            "total_events":
-                total_events,
-
-            "unique_users":
-                len(unique_users),
-
-            "event_counts":
-                event_counts,
-
-            "message":
-                "E-commerce dataset loaded successfully."
-
-        })
-
-
-        return result
-
-
-    except Exception as e:
-
-        result["message"] = str(e)
-
-        return result
-
-
-# ============================================================
-# E-COMMERCE DATASET API
-#
-# IMPORTANT:
-# This does NOT insert anything into shopflow.db.
-# Therefore it cannot change the live 23 events.
-# ============================================================
-
-@app.route(
-    "/api/ecommerce-dataset"
-)
-def ecommerce_dataset_api():
-
-    stats = (
-        get_ecommerce_dataset_stats()
-    )
-
-    return jsonify(
-        stats
-    )
-
-
-# ============================================================
-# HEARTBEAT
-#
-# ONLY ONE HEARTBEAT ROUTE.
-#
-# DO NOT ADD ANOTHER /heartbeat ROUTE.
-# ============================================================
-
-@app.route(
-    "/heartbeat",
-    methods=["POST"]
-)
-def heartbeat():
-
-    data = (
-        request.get_json(
-            silent=True
-        )
-        or {}
-    )
-
-
-    user_id = data.get(
-        "user_id",
-        "dashboard"
-    )
-
-
-    return jsonify({
-
-        "success":
-            True,
-
-        "message":
-            "Heartbeat received",
-
-        "user_id":
-            user_id,
-
-        "timestamp":
-            datetime.now().isoformat()
-
-    })
-
-
-# ============================================================
-# START APPLICATION
-# ============================================================
+# =========================================================
+# START
+# =========================================================
 
 if __name__ == "__main__":
 
-    init_database()
+    ensure_mysql_tables()
 
-
-    print()
-    print("==============================================")
-    print("          SHOPFLOW APPLICATION STARTED")
-    print("==============================================")
-    print()
-
-    print("Website:")
-    print(
-        "http://127.0.0.1:5000"
-    )
-
-    print()
-
-    print("Dashboard:")
-    print(
-        "http://127.0.0.1:5000/dashboard"
-    )
-
-    print()
-
-    print("Health:")
-    print(
-        "http://127.0.0.1:5000/health"
-    )
-
-    print()
-
-    print("Events:")
-    print(
-        "http://127.0.0.1:5000/api/events"
-    )
-
-    print()
-
-    print("Analytics:")
-    print(
-        "http://127.0.0.1:5000/api/analytics/summary"
-    )
-
-    print()
-
-    print("Funnel:")
-    print(
-        "http://127.0.0.1:5000/api/analytics/funnel"
-    )
-
-    print()
-
-    print("Dashboard Data:")
-    print(
-        "http://127.0.0.1:5000/dashboard-data"
-    )
-
-    print()
-
-    print("ML Prediction:")
-    print(
-        "http://127.0.0.1:5000/api/ml/prediction"
-    )
-
-    print()
-
-    print("ML Status:")
-    print(
-        "http://127.0.0.1:5000/api/ml-status"
-    )
-
-    print()
-
-    print("Recommendation:")
-    print(
-        "http://127.0.0.1:5000/api/recommendation"
-    )
-
-    print()
-
-    print("E-commerce Dataset:")
-    print(
-        "http://127.0.0.1:5000/api/ecommerce-dataset"
-    )
-
-    print()
-
-    print("Heartbeat:")
-    print(
-        "http://127.0.0.1:5000/heartbeat"
-    )
-
-    print()
-
-    print("==============================================")
-    print()
-
-if __name__ == "__main__":
     app.run(
-        debug=True,
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        debug=True
     )
