@@ -2045,6 +2045,166 @@ def live():
         page="Live User Journey",
         next_user=next_user_id()
     )
+    # =========================================================
+# DASHBOARD DATA API
+# =========================================================
+
+@app.route("/dashboard-data")
+def dashboard_data():
+
+    df = load_data()
+
+    # Empty dataset protection
+    if df.empty:
+        return jsonify({
+            "total_events": 0,
+            "unique_users": 0,
+            "event_counts": {},
+            "funnel": {},
+            "prediction": {},
+            "dropoff": {
+                "biggest": "—"
+            },
+            "recent_events": [],
+            "ml_model_loaded": model is not None
+        })
+
+    # -----------------------------------------------------
+    # BASIC COUNTS
+    # -----------------------------------------------------
+
+    total_events = len(df)
+
+    unique_users = (
+        df["user_id"].nunique()
+        if "user_id" in df.columns
+        else 0
+    )
+
+    event_counts = (
+        df["event_type"]
+        .value_counts()
+        .to_dict()
+        if "event_type" in df.columns
+        else {}
+    )
+
+    # -----------------------------------------------------
+    # FUNNEL
+    # -----------------------------------------------------
+
+    funnel_order = [
+    ("visit", "Signup"),
+    ("signup", "Add to Cart"),
+    ("add_to_cart", "Checkout"),
+    ("checkout", "Purchase")
+]
+
+    # -----------------------------------------------------
+    # DROPOFF
+    # -----------------------------------------------------
+
+    funnel_order = [
+        ("visit", "Product View"),
+        ("product_view", "Add to Cart"),
+        ("add_to_cart", "View Cart"),
+        ("view_cart", "Checkout"),
+        ("checkout", "Purchase")
+    ]
+
+    biggest_dropoff = "—"
+    biggest_drop = -1
+
+    for current, next_stage in funnel_order:
+
+        current_count = funnel.get(current, 0)
+
+        if current_count > 0:
+
+            next_key = next_stage.lower().replace(" ", "_")
+            next_count = funnel.get(next_key, 0)
+
+            drop = current_count - next_count
+
+            if drop > biggest_drop:
+                biggest_drop = drop
+                biggest_dropoff = next_stage
+
+    # -----------------------------------------------------
+    # RECENT EVENTS
+    # -----------------------------------------------------
+
+    recent_events = []
+
+    columns = [
+        "user_id",
+        "timestamp",
+        "event_type",
+        "device",
+        "location",
+        "traffic_source",
+        "product_id"
+    ]
+
+    available_columns = [
+        col for col in columns
+        if col in df.columns
+    ]
+
+    recent_df = df.tail(10)
+
+    for _, row in recent_df.iterrows():
+
+        event = {}
+
+        for col in available_columns:
+
+            value = row[col]
+
+            if pd.isna(value):
+                value = ""
+
+            event[col] = str(value)
+
+        recent_events.append(event)
+
+    # -----------------------------------------------------
+    # PREDICTION
+    # -----------------------------------------------------
+
+    prediction = {
+        "purchase_probability": 0,
+        "dropoff_probability": 0,
+        "risk_level": "LOW",
+        "recommendation": "Continue monitoring user behaviour.",
+        "action": "Continue monitoring"
+    }
+
+    # -----------------------------------------------------
+    # RESPONSE
+    # -----------------------------------------------------
+
+    return jsonify({
+
+        "total_events": total_events,
+
+        "unique_users": unique_users,
+
+        "event_counts": event_counts,
+
+        "funnel": funnel,
+
+        "prediction": prediction,
+
+        "dropoff": {
+            "biggest": biggest_dropoff
+        },
+
+        "recent_events": recent_events,
+
+        "ml_model_loaded": model is not None
+
+    })
 
 
 # =========================================================
