@@ -2750,19 +2750,17 @@ def health():
 
     return jsonify({
 
-        "status":
-            "ok",
+    "status":
+        "ok",
 
-        "mysql":
-            mysql_status,
+    "mysql":
+        mysql_status,
 
-        "csv":
-            DATA_FILE = BASE_DIR / "data" / "ecommerce_events.csv"
+    "csv": DATA_FILE.exists(),
 
-        "model":
-            model is not None
-    })
-
+    "model":
+        model is not None
+})
 
 # =========================================================
 # STARTUP
