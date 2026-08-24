@@ -24,27 +24,13 @@ CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_FILE = os.path.join(BASE_DIR, "data", "ecommerce_events.csv")
+DATA_FILE = BASE_DIR / "data" / "ecommerce_events.csv"
 MODEL_FILE = BASE_DIR / "models" / "dropout_model.pkl"
 METRICS_FILE = BASE_DIR / "models" / "model_metrics.pkl"
 
 
 # =========================================================
-# MYSQL CONFIGURATION
-#
-# LOCAL:
-#   MYSQL_HOST=localhost
-#
-# RENDER:
-#   Add these in Render Environment Variables:
-#
-#   MYSQL_HOST
-#   MYSQL_PORT
-#   MYSQL_USER
-#   MYSQL_PASSWORD
-#   MYSQL_DATABASE
-#
-# DO NOT put your real password in this file.
+# MYSQL CONFIG
 # =========================================================
 
 MYSQL_CONFIG = {
@@ -107,7 +93,7 @@ def add_cors_headers(response):
 
 
 # =========================================================
-# BASIC HELPERS
+# HELPERS
 # =========================================================
 
 def clean_value(value):
@@ -131,54 +117,6 @@ def normalize_key(value):
     )
 
 
-def find_column(df, candidates):
-    """
-    Finds the actual CSV column even when naming differs.
-
-    Example:
-        User ID
-        user_id
-        USERID
-        UserID
-
-    are treated as the same logical field.
-    """
-
-    if df is None or df.empty:
-        return None
-
-    normalized = {}
-
-    for column in df.columns:
-        normalized[
-            normalize_key(column)
-        ] = column
-
-    for candidate in candidates:
-        key = normalize_key(candidate)
-
-        if key in normalized:
-            return normalized[key]
-
-    return None
-
-
-def get_column_series(df, candidates, default=""):
-    column = find_column(df, candidates)
-
-    if column is None:
-        return pd.Series(
-            [default] * len(df),
-            index=df.index
-        )
-
-    return df[column]
-
-
-# =========================================================
-# EVENT NORMALIZATION
-# =========================================================
-
 def normalize_event(value):
 
     x = clean_value(value).lower()
@@ -188,7 +126,6 @@ def normalize_event(value):
     x = re.sub(r"\s+", " ", x).strip()
 
     mapping = {
-
         "visit": "visit",
         "visited": "visit",
         "page visit": "visit",
@@ -245,156 +182,6 @@ def event_display(value):
     )
 
 
-# =========================================================
-# CSV
-# =========================================================
-
-def load_data():
-
-    if not os.path.exists(DATA_FILE):
-        print("CSV file not found:", DATA_FILE)
-        return pd.DataFrame()
-
-    try:
-        df = pd.read_csv(DATA_FILE)
-
-        print(
-            "CSV loaded:",
-            len(df),
-            "rows"
-        )
-
-        return df
-
-    except Exception as e:
-
-        print(
-            "CSV read error:",
-            e
-        )
-
-        return pd.DataFrame()
-
-
-# =========================================================
-# MODEL METRICS
-# =========================================================
-
-def load_metrics():
-
-    if not METRICS_FILE.exists():
-        return {}
-
-    try:
-        return joblib.load(METRICS_FILE)
-
-    except Exception as e:
-
-        print(
-            "Metrics read error:",
-            e
-        )
-
-        return {}
-
-
-# =========================================================
-# TIMESTAMP HANDLING
-# =========================================================
-
-def get_timestamp_column(df):
-
-    return find_column(
-        df,
-        [
-            "timestamp",
-            "date_time",
-            "datetime",
-            "date time",
-            "event_time",
-            "event_timestamp",
-            "time_stamp",
-            "time"
-        ]
-    )
-
-
-def get_date_column(df):
-
-    return find_column(
-        df,
-        [
-            "date",
-            "event_date",
-            "visit_date",
-            "event day"
-        ]
-    )
-
-
-def get_time_column(df):
-
-    return find_column(
-        df,
-        [
-            "time",
-            "event_time",
-            "eventtime"
-        ]
-    )
-
-
-def build_timestamp(df):
-
-    if df.empty:
-        return pd.Series(
-            dtype="datetime64[ns]"
-        )
-
-    timestamp_col = get_timestamp_column(df)
-
-    if timestamp_col:
-
-        ts = pd.to_datetime(
-            df[timestamp_col],
-            errors="coerce"
-        )
-
-        return ts
-
-    date_col = get_date_column(df)
-    time_col = get_time_column(df)
-
-    if date_col:
-
-        if time_col:
-
-            combined = (
-                df[date_col].astype(str)
-                + " "
-                + df[time_col].astype(str)
-            )
-
-            return pd.to_datetime(
-                combined,
-                errors="coerce"
-            )
-
-        return pd.to_datetime(
-            df[date_col],
-            errors="coerce"
-        )
-
-    return pd.Series(
-        pd.NaT,
-        index=df.index
-    )
-
-
-# =========================================================
-# DEVICE DETECTION
-# =========================================================
-
 def detect_device():
 
     user_agent = request.headers.get(
@@ -419,7 +206,7 @@ def detect_device():
 
 
 # =========================================================
-# MYSQL TABLES
+# LIVE DATABASE
 # =========================================================
 
 def ensure_mysql_tables():
@@ -430,7 +217,6 @@ def ensure_mysql_tables():
     try:
 
         connection = get_mysql_connection()
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -467,21 +253,14 @@ def ensure_mysql_tables():
 
                 previous_visits INT DEFAULT 0,
 
-                dropout_probability
-                    DECIMAL(10,8)
-                    DEFAULT 0,
+                dropout_probability DECIMAL(10,8) DEFAULT 0,
 
                 risk VARCHAR(20)
-
             )
             """
         )
 
         connection.commit()
-
-        # -------------------------------------------------
-        # Add missing columns to older table
-        # -------------------------------------------------
 
         cursor.execute(
             "SHOW COLUMNS FROM live_events"
@@ -503,11 +282,38 @@ def ensure_mysql_tables():
             "product":
                 "VARCHAR(255)",
 
+            "device":
+                "VARCHAR(100)",
+
             "location":
                 "VARCHAR(255)",
 
             "traffic_source":
-                "VARCHAR(100)"
+                "VARCHAR(100)",
+
+            "current_page":
+                "VARCHAR(100)",
+
+            "age":
+                "INT DEFAULT 25",
+
+            "pages_visited":
+                "INT DEFAULT 1",
+
+            "session_duration":
+                "INT DEFAULT 0",
+
+            "clicks":
+                "INT DEFAULT 0",
+
+            "previous_visits":
+                "INT DEFAULT 0",
+
+            "dropout_probability":
+                "DECIMAL(10,8) DEFAULT 0",
+
+            "risk":
+                "VARCHAR(20)"
         }
 
         for column, definition in additions.items():
@@ -523,9 +329,7 @@ def ensure_mysql_tables():
 
         connection.commit()
 
-        print(
-            "MySQL live_events table ready."
-        )
+        print("MySQL live_events table ready.")
 
     except Exception as e:
 
@@ -544,7 +348,7 @@ def ensure_mysql_tables():
 
 
 # =========================================================
-# LOAD LIVE EVENTS
+# LOAD ONLY LIVE EVENTS
 # =========================================================
 
 def load_live_events():
@@ -606,59 +410,29 @@ def next_user_id():
     try:
 
         connection = get_mysql_connection()
-
         cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT MAX(
+                CAST(
+                    REPLACE(user_id, 'U', '')
+                    AS UNSIGNED
+                )
+            )
+            FROM live_events
+            """
+        )
+
+        result = cursor.fetchone()
 
         maximum = 1000
 
-        # funnel_data may already exist
-        try:
-
-            cursor.execute(
-                """
-                SELECT MAX(user_id)
-                FROM funnel_data
-                """
+        if result and result[0]:
+            maximum = max(
+                maximum,
+                int(result[0])
             )
-
-            result = cursor.fetchone()
-
-            if result and result[0]:
-
-                maximum = max(
-                    maximum,
-                    int(result[0])
-                )
-
-        except Exception:
-            pass
-
-        # live_events
-        try:
-
-            cursor.execute(
-                """
-                SELECT MAX(
-                    CAST(
-                        REPLACE(user_id,'U','')
-                        AS UNSIGNED
-                    )
-                )
-                FROM live_events
-                """
-            )
-
-            result = cursor.fetchone()
-
-            if result and result[0]:
-
-                maximum = max(
-                    maximum,
-                    int(result[0])
-                )
-
-        except Exception:
-            pass
 
         return f"U{maximum + 1}"
 
@@ -735,7 +509,6 @@ def calculate_prediction(
 
     stage = normalize_event(page)
 
-    # Completed purchase
     if stage == "purchase":
         return 0.0, "LOW"
 
@@ -816,16 +589,11 @@ def save_live_event(user, data):
     try:
 
         connection = get_mysql_connection()
-
         cursor = connection.cursor()
 
-        raw_user_id = str(
+        user_id = str(
             user["user_id"]
         )
-
-        # Keep numeric ID when possible,
-        # otherwise keep original string.
-        mysql_user_id = raw_user_id
 
         event_type = event_display(
             user["current_page"]
@@ -895,7 +663,7 @@ def save_live_event(user, data):
 
         values = (
             datetime.now(),
-            mysql_user_id,
+            user_id,
             event_type,
             product_id,
             product,
@@ -919,12 +687,6 @@ def save_live_event(user, data):
 
         connection.commit()
 
-        print(
-            "Live event saved:",
-            mysql_user_id,
-            event_type
-        )
-
         return True
 
     except Exception as e:
@@ -946,1069 +708,541 @@ def save_live_event(user, data):
 
 
 # =========================================================
-# SAVE FUNNEL DATA
+# LIVE DASHBOARD DATA
 # =========================================================
-
-def save_event_to_funnel(data, user):
-
-    connection = None
-    cursor = None
-
-    try:
-
-        connection = get_mysql_connection()
-
-        cursor = connection.cursor()
-
-        raw_user_id = str(
-            user["user_id"]
-        )
-
-        try:
-
-            numeric_user_id = int(
-                raw_user_id.replace(
-                    "U",
-                    ""
-                )
-            )
-
-        except Exception:
-
-            numeric_user_id = 0
-
-        current_page = str(
-            user["current_page"]
-        ).strip()
-
-        traffic_source = str(
-            data.get(
-                "traffic_source",
-                "Direct"
-            ) or "Direct"
-        )
-
-        landing_page = str(
-            data.get(
-                "landing_page",
-                "Home"
-            ) or "Home"
-        )
-
-        product_viewed = data.get(
-            "product_viewed",
-            data.get(
-                "product",
-                data.get(
-                    "product_name",
-                    ""
-                )
-            )
-        )
-
-        if not product_viewed:
-            product_viewed = ""
-
-        added_to_cart = int(
-            data.get(
-                "added_to_cart",
-                1
-                if normalize_event(
-                    current_page
-                ) == "add_to_cart"
-                else 0
-            )
-        )
-
-        checkout_started = int(
-            data.get(
-                "checkout_started",
-                1
-                if normalize_event(
-                    current_page
-                ) == "checkout"
-                else 0
-            )
-        )
-
-        purchase_completed = int(
-            data.get(
-                "purchase_completed",
-                1
-                if normalize_event(
-                    current_page
-                ) == "purchase"
-                else 0
-            )
-        )
-
-        purchase_amount = float(
-            data.get(
-                "purchase_amount",
-                0
-            ) or 0
-        )
-
-        # Make sure funnel_data exists.
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS funnel_data
-            (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                user_id INT,
-
-                visit_date DATE,
-
-                traffic_source VARCHAR(100),
-
-                device VARCHAR(100),
-
-                landing_page VARCHAR(255),
-
-                product_viewed VARCHAR(255),
-
-                added_to_cart INT DEFAULT 0,
-
-                checkout_started INT DEFAULT 0,
-
-                purchase_completed INT DEFAULT 0,
-
-                purchase_amount DECIMAL(12,2)
-                    DEFAULT 0
-            )
-            """
-        )
-
-        query = """
-            INSERT INTO funnel_data
-            (
-                user_id,
-                visit_date,
-                traffic_source,
-                device,
-                landing_page,
-                product_viewed,
-                added_to_cart,
-                checkout_started,
-                purchase_completed,
-                purchase_amount
-            )
-            VALUES
-            (
-                %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s
-            )
-        """
-
-        values = (
-            numeric_user_id,
-            datetime.now().date(),
-            traffic_source,
-            user["device"],
-            landing_page,
-            product_viewed,
-            added_to_cart,
-            checkout_started,
-            purchase_completed,
-            purchase_amount
-        )
-
-        cursor.execute(
-            query,
-            values
-        )
-
-        connection.commit()
-
-        return True
-
-    except Exception as e:
-
-        print(
-            "MySQL funnel save error:",
-            e
-        )
-
-        return False
-
-    finally:
-
-        if cursor is not None:
-            cursor.close()
-
-        if connection is not None:
-            connection.close()
-
-
-# =========================================================
-# DATASET ANALYSIS
 #
-# THIS IS THE DETAILED DATASET SECTION.
+# IMPORTANT:
+# THIS DOES NOT USE ecommerce_events.csv.
 #
-# It uses ACTUAL CSV columns dynamically.
+# EVERYTHING HERE COMES FROM MySQL live_events.
 # =========================================================
 
-def analyze_dataset():
+@app.route("/dashboard-data")
+def dashboard_data():
 
-    df = load_data()
+    df = load_live_events()
 
     if df.empty:
 
-        return {
-            "available": False,
-            "message": "Dataset not available",
-            "columns": [],
+        return jsonify({
+
             "total_events": 0,
+
             "unique_users": 0,
+
             "product_views": 0,
-            "add_to_cart": 0,
-            "checkout": 0,
+
             "purchases": 0,
-            "rows": []
-        }
 
-    original_columns = [
-        str(c)
-        for c in df.columns
-    ]
+            "funnel": {
+                "visit": 0,
+                "product_view": 0,
+                "add_to_cart": 0,
+                "checkout": 0,
+                "purchase": 0
+            },
 
-    # -----------------------------------------------------
-    # IDENTIFY IMPORTANT COLUMNS
-    # -----------------------------------------------------
+            "prediction": {
 
-    user_col = find_column(
-        df,
-        [
-            "user_id",
-            "userid",
-            "user id",
-            "customer_id",
-            "customerid"
-        ]
-    )
+                "current_user": "—",
 
-    event_col = find_column(
-        df,
-        [
-            "event",
-            "event_type",
-            "event type",
-            "action",
-            "current_page",
-            "page"
-        ]
-    )
+                "current_stage": "—",
 
-    product_id_col = find_column(
-        df,
-        [
-            "product_id",
-            "product id",
-            "productid",
-            "item_id",
-            "sku"
-        ]
-    )
+                "dropoff_probability": 0,
 
-    product_col = find_column(
-        df,
-        [
-            "product",
-            "product_name",
-            "product name",
-            "product_viewed",
-            "item",
-            "item_name"
-        ]
-    )
+                "purchase_probability": 0,
 
-    device_col = find_column(
-        df,
-        [
-            "device",
-            "device_type",
-            "device type"
-        ]
-    )
+                "risk_level": "LOW"
+            },
 
-    location_col = find_column(
-        df,
-        [
-            "location",
-            "city",
-            "country",
-            "region"
-        ]
-    )
+            "dropoff": {
+                "biggest": "—"
+            },
 
-    traffic_col = find_column(
-        df,
-        [
-            "traffic_source",
-            "traffic source",
-            "source",
-            "channel",
-            "marketing_channel"
-        ]
-    )
+            "recent_events": [],
+
+            "ml_model_loaded": model is not None
+
+        })
+
 
     # -----------------------------------------------------
-    # TIMESTAMP
+    # NORMALIZE EVENTS
     # -----------------------------------------------------
 
-    timestamps = build_timestamp(df)
+    if "event_type" in df.columns:
 
-    # -----------------------------------------------------
-    # EVENT COUNTS
-    # -----------------------------------------------------
-
-    if event_col:
-
-        normalized_events = (
-            df[event_col]
+        df["normalized_event"] = (
+            df["event_type"]
             .apply(normalize_event)
         )
 
     else:
 
-        normalized_events = pd.Series(
-            [""] * len(df),
-            index=df.index
-        )
+        df["normalized_event"] = ""
+
+
+    # -----------------------------------------------------
+    # BASIC LIVE COUNTS
+    # -----------------------------------------------------
 
     total_events = len(df)
 
-    unique_users = 0
-
-    if user_col:
+    if "user_id" in df.columns:
 
         unique_users = int(
-            df[user_col]
-            .dropna()
+            df["user_id"]
             .astype(str)
             .nunique()
         )
 
+    else:
+
+        unique_users = 0
+
+
     product_views = int(
         (
-            normalized_events
+            df["normalized_event"]
             == "product_view"
         ).sum()
     )
 
     add_to_cart = int(
         (
-            normalized_events
+            df["normalized_event"]
             == "add_to_cart"
         ).sum()
     )
 
     checkout = int(
         (
-            normalized_events
+            df["normalized_event"]
             == "checkout"
         ).sum()
     )
 
     purchases = int(
         (
-            normalized_events
+            df["normalized_event"]
             == "purchase"
         ).sum()
     )
 
     visits = int(
         (
-            normalized_events
+            df["normalized_event"]
             == "visit"
         ).sum()
     )
 
-    view_cart = int(
+
+    # -----------------------------------------------------
+    # LIVE FUNNEL
+    # -----------------------------------------------------
+
+    funnel = {
+
+        "visit":
+            visits,
+
+        "product_view":
+            product_views,
+
+        "add_to_cart":
+            add_to_cart,
+
+        "checkout":
+            checkout,
+
+        "purchase":
+            purchases
+    }
+
+
+    # -----------------------------------------------------
+    # DROP-OFF
+    # -----------------------------------------------------
+
+    funnel_pairs = [
+
         (
-            normalized_events
-            == "view_cart"
-        ).sum()
-    )
-
-    # -----------------------------------------------------
-    # USER IDs
-    # -----------------------------------------------------
-
-    if user_col:
-
-        user_values = (
-            df[user_col]
-            .fillna("")
-            .astype(str)
-        )
-
-    else:
-
-        user_values = pd.Series(
-            [""] * len(df),
-            index=df.index
-        )
-
-    # -----------------------------------------------------
-    # DROP-OFF ANALYSIS
-    # -----------------------------------------------------
-
-    stage_counts = {
-        "Visit": visits,
-        "Product View": product_views,
-        "Add to Cart": add_to_cart,
-        "View Cart": view_cart,
-        "Checkout": checkout,
-        "Purchase": purchases
-    }
-
-    # Sequential user-based stage analysis
-    user_stage_sets = {}
-
-    if user_col:
-
-        for stage_name, stage_key in [
-            ("Visit", "visit"),
-            ("Product View", "product_view"),
-            ("Add to Cart", "add_to_cart"),
-            ("View Cart", "view_cart"),
-            ("Checkout", "checkout"),
-            ("Purchase", "purchase")
-        ]:
-
-            mask = (
-                normalized_events
-                == stage_key
-            )
-
-            user_stage_sets[
-                stage_name
-            ] = set(
-                user_values[mask]
-                .dropna()
-                .astype(str)
-            )
-
-    else:
-
-        user_stage_sets = {
-            key: set()
-            for key in stage_counts
-        }
-
-    visit_users = len(
-        user_stage_sets["Visit"]
-    )
-
-    product_users = len(
-        user_stage_sets["Product View"]
-    )
-
-    cart_users = len(
-        user_stage_sets["Add to Cart"]
-    )
-
-    checkout_users = len(
-        user_stage_sets["Checkout"]
-    )
-
-    purchase_users = len(
-        user_stage_sets["Purchase"]
-    )
-
-    # If CSV does not have Visit event,
-    # use all unique users as visit base.
-    if visit_users == 0:
-        visit_users = unique_users
-
-    # -----------------------------------------------------
-    # STOPPED AFTER EACH STAGE
-    # -----------------------------------------------------
-
-    stopped_after_visit = max(
-        visit_users - product_users,
-        0
-    )
-
-    stopped_after_product = max(
-        product_users - cart_users,
-        0
-    )
-
-    stopped_after_cart = max(
-        cart_users - checkout_users,
-        0
-    )
-
-    stopped_after_checkout = max(
-        checkout_users - purchase_users,
-        0
-    )
-
-    # -----------------------------------------------------
-    # DROP-OFF PERCENTAGES
-    # -----------------------------------------------------
-
-    def percentage(part, whole):
-
-        if whole <= 0:
-            return 0.0
-
-        return round(
-            part / whole * 100,
-            2
-        )
-
-    dropoff_analysis = {
-
-        "visit_to_product": percentage(
-            stopped_after_visit,
-            visit_users
+            "Visit",
+            visits,
+            "Product View",
+            product_views
         ),
 
-        "product_to_cart": percentage(
-            stopped_after_product,
-            product_users
+        (
+            "Product View",
+            product_views,
+            "Add to Cart",
+            add_to_cart
         ),
 
-        "cart_to_checkout": percentage(
-            stopped_after_cart,
-            cart_users
+        (
+            "Add to Cart",
+            add_to_cart,
+            "Checkout",
+            checkout
         ),
 
-        "checkout_to_purchase": percentage(
-            stopped_after_checkout,
-            checkout_users
+        (
+            "Checkout",
+            checkout,
+            "Purchase",
+            purchases
         )
-    }
+    ]
+
 
     biggest_dropoff = "—"
+    biggest_drop = -1
 
-    if dropoff_analysis:
+    for (
+        current_name,
+        current_count,
+        next_name,
+        next_count
+    ) in funnel_pairs:
 
-        biggest_key = max(
-            dropoff_analysis,
-            key=dropoff_analysis.get
-        )
+        if current_count > 0:
 
-        labels = {
-
-            "visit_to_product":
-                "Visit → Product View",
-
-            "product_to_cart":
-                "Product View → Add to Cart",
-
-            "cart_to_checkout":
-                "Add to Cart → Checkout",
-
-            "checkout_to_purchase":
-                "Checkout → Purchase"
-        }
-
-        biggest_dropoff = (
-            labels[biggest_key]
-            + " "
-            + str(
-                dropoff_analysis[
-                    biggest_key
-                ]
+            drop = (
+                current_count
+                - next_count
             )
-            + "%"
+
+            if drop > biggest_drop:
+
+                biggest_drop = drop
+
+                biggest_dropoff = (
+                    f"{current_name} → "
+                    f"{next_name}"
+                )
+
+
+    # -----------------------------------------------------
+    # LATEST LIVE USER
+    # -----------------------------------------------------
+
+    latest = df.iloc[0]
+
+    current_user = str(
+        latest.get(
+            "user_id",
+            "—"
         )
-
-    # -----------------------------------------------------
-    # TRAFFIC ANALYSIS
-    # ONLY ACTUAL CSV VALUES
-    # -----------------------------------------------------
-
-    traffic_analysis = {}
-
-    if traffic_col:
-
-        values = (
-            df[traffic_col]
-            .fillna("Unknown")
-            .astype(str)
-            .str.strip()
-        )
-
-        values = values[
-            values != ""
-        ]
-
-        traffic_analysis = {
-            str(k): int(v)
-            for k, v in
-            values.value_counts().items()
-        }
-
-    # -----------------------------------------------------
-    # DEVICE ANALYSIS
-    # ONLY ACTUAL CSV VALUES
-    # -----------------------------------------------------
-
-    device_analysis = {}
-
-    if device_col:
-
-        values = (
-            df[device_col]
-            .fillna("Unknown")
-            .astype(str)
-            .str.strip()
-        )
-
-        values = values[
-            values != ""
-        ]
-
-        device_analysis = {
-            str(k): int(v)
-            for k, v in
-            values.value_counts().items()
-        }
-
-    # -----------------------------------------------------
-    # LOCATION ANALYSIS
-    # -----------------------------------------------------
-
-    location_analysis = {}
-
-    if location_col:
-
-        values = (
-            df[location_col]
-            .fillna("Unknown")
-            .astype(str)
-            .str.strip()
-        )
-
-        values = values[
-            values != ""
-        ]
-
-        location_analysis = {
-            str(k): int(v)
-            for k, v in
-            values.value_counts().head(20).items()
-        }
-
-    # -----------------------------------------------------
-    # PRODUCT ANALYSIS
-    # -----------------------------------------------------
-
-    product_analysis = {}
-
-    product_field = (
-        product_col
-        if product_col
-        else product_id_col
     )
 
-    if product_field:
-
-        values = (
-            df[product_field]
-            .fillna("Unknown")
-            .astype(str)
-            .str.strip()
+    current_stage = event_display(
+        latest.get(
+            "event_type",
+            latest.get(
+                "current_page",
+                ""
+            )
         )
+    )
 
-        values = values[
-            values != ""
-        ]
-
-        product_analysis = {
-            str(k): int(v)
-            for k, v in
-            values.value_counts().head(30).items()
-        }
 
     # -----------------------------------------------------
-    # TIME ANALYSIS
+    # LIVE PREDICTION
     # -----------------------------------------------------
 
-    events_by_date = {}
-    events_by_hour = {}
+    try:
 
-    peak_activity_time = "—"
-    peak_purchase_time = "—"
-
-    dropoffs_by_time = {}
-    purchases_by_time = {}
-
-    if timestamps.notna().any():
-
-        valid_ts = timestamps[
-            timestamps.notna()
-        ]
-
-        date_counts = (
-            valid_ts
-            .dt.strftime("%Y-%m-%d")
-            .value_counts()
-            .sort_index()
-        )
-
-        events_by_date = {
-            str(k): int(v)
-            for k, v in
-            date_counts.items()
-        }
-
-        hour_counts = (
-            valid_ts
-            .dt.hour
-            .value_counts()
-            .sort_index()
-        )
-
-        events_by_hour = {
-            f"{int(k):02d}:00":
-            int(v)
-            for k, v in
-            hour_counts.items()
-        }
-
-        if not hour_counts.empty:
-
-            peak_hour = int(
-                hour_counts.idxmax()
-            )
-
-            peak_activity_time = (
-                f"{peak_hour:02d}:00 - "
-                f"{peak_hour:02d}:59"
-            )
-
-        purchase_mask = (
-            normalized_events
-            == "purchase"
-        )
-
-        purchase_ts = timestamps[
-            purchase_mask
-        ]
-
-        purchase_ts = purchase_ts[
-            purchase_ts.notna()
-        ]
-
-        if not purchase_ts.empty:
-
-            purchase_hours = (
-                purchase_ts
-                .dt.hour
-                .value_counts()
-                .sort_index()
-            )
-
-            peak_purchase_hour = int(
-                purchase_hours.idxmax()
-            )
-
-            peak_purchase_time = (
-                f"{peak_purchase_hour:02d}:00 - "
-                f"{peak_purchase_hour:02d}:59"
-            )
-
-            purchases_by_time = {
-                f"{int(k):02d}:00":
-                int(v)
-                for k, v in
-                purchase_hours.items()
-            }
-
-        # Hourly drop-off approximation
-        dropoff_mask = (
-            normalized_events.isin(
-                [
-                    "visit",
-                    "product_view",
-                    "add_to_cart",
-                    "view_cart",
-                    "checkout"
-                ]
+        age = int(
+            latest.get(
+                "age",
+                25
             )
         )
 
-        dropoff_ts = timestamps[
-            dropoff_mask
-        ]
+    except Exception:
 
-        dropoff_ts = dropoff_ts[
-            dropoff_ts.notna()
-        ]
+        age = 25
 
-        if not dropoff_ts.empty:
 
-            drop_hours = (
-                dropoff_ts
-                .dt.hour
-                .value_counts()
-                .sort_index()
+    try:
+
+        pages = int(
+            latest.get(
+                "pages_visited",
+                1
             )
-
-            dropoffs_by_time = {
-                f"{int(k):02d}:00":
-                int(v)
-                for k, v in
-                drop_hours.items()
-            }
-
-    else:
-
-        events_by_hour = {}
-
-    # -----------------------------------------------------
-    # DETAILED ACTUAL DATASET ROWS
-    # -----------------------------------------------------
-
-    detailed_rows = []
-
-    display_df = df.copy()
-
-    display_df["_dashboard_timestamp"] = timestamps
-
-    for index, row in display_df.iterrows():
-
-        record = {}
-
-        # Keep every ORIGINAL CSV column.
-        for column in original_columns:
-
-            value = row.get(column, "")
-
-            if pd.isna(value):
-                value = ""
-
-            elif hasattr(value, "item"):
-
-                try:
-                    value = value.item()
-                except Exception:
-                    value = str(value)
-
-            record[str(column)] = value
-
-        # Add normalized dashboard fields.
-        user_value = (
-            row[user_col]
-            if user_col
-            else ""
         )
 
-        event_value = (
-            row[event_col]
-            if event_col
-            else ""
+    except Exception:
+
+        pages = 1
+
+
+    try:
+
+        duration = int(
+            latest.get(
+                "session_duration",
+                0
+            )
         )
 
-        product_id_value = (
-            row[product_id_col]
-            if product_id_col
-            else ""
+    except Exception:
+
+        duration = 0
+
+
+    try:
+
+        clicks = int(
+            latest.get(
+                "clicks",
+                0
+            )
         )
 
-        product_value = (
-            row[product_col]
-            if product_col
-            else ""
+    except Exception:
+
+        clicks = 0
+
+
+    try:
+
+        previous_visits = int(
+            latest.get(
+                "previous_visits",
+                0
+            )
         )
 
-        device_value = (
-            row[device_col]
-            if device_col
-            else ""
+    except Exception:
+
+        previous_visits = 0
+
+
+    probability, risk = calculate_prediction(
+
+        age,
+
+        pages,
+
+        duration,
+
+        clicks,
+
+        previous_visits,
+
+        current_stage
+    )
+
+
+    # If a prediction was stored in MySQL,
+    # use that actual live prediction.
+
+    try:
+
+        stored_probability = float(
+            latest.get(
+                "dropout_probability",
+                probability
+            )
         )
 
-        location_value = (
-            row[location_col]
-            if location_col
-            else ""
-        )
+        if math.isfinite(
+            stored_probability
+        ):
 
-        traffic_value = (
-            row[traffic_col]
-            if traffic_col
-            else ""
-        )
-
-        timestamp_value = (
-            timestamps.loc[index]
-            if index in timestamps.index
-            else pd.NaT
-        )
-
-        if pd.notna(timestamp_value):
-
-            timestamp_text = (
-                timestamp_value.strftime(
-                    "%Y-%m-%d %H:%M:%S"
+            probability = max(
+                0,
+                min(
+                    stored_probability,
+                    1
                 )
             )
 
-        else:
+    except Exception:
 
-            timestamp_text = ""
+        pass
 
-        record[
-            "_dashboard_user_id"
-        ] = clean_value(user_value)
 
-        record[
-            "_dashboard_event"
-        ] = event_display(event_value)
+    if current_stage == "Purchase":
 
-        record[
-            "_dashboard_product_id"
-        ] = clean_value(product_id_value)
+        purchase_probability = 1.0
 
-        record[
-            "_dashboard_product"
-        ] = clean_value(product_value)
+    else:
 
-        record[
-            "_dashboard_device"
-        ] = clean_value(device_value)
+        purchase_probability = (
+            1.0 - probability
+        )
 
-        record[
-            "_dashboard_location"
-        ] = clean_value(location_value)
-
-        record[
-            "_dashboard_traffic_source"
-        ] = clean_value(traffic_value)
-
-        record[
-            "_dashboard_timestamp"
-        ] = timestamp_text
-
-        detailed_rows.append(record)
-
-    # newest first
-    detailed_rows.reverse()
 
     # -----------------------------------------------------
-    # DATASET SUMMARY
+    # LIVE RECENT EVENTS
     # -----------------------------------------------------
 
-    return {
+    recent_events = []
 
-        "available": True,
+    recent_df = df.head(10)
 
-        "columns": original_columns,
+    for _, row in recent_df.iterrows():
 
-        "column_mapping": {
+        event = {
 
-            "user_id": user_col,
+            "user_id":
+                str(
+                    row.get(
+                        "user_id",
+                        ""
+                    )
+                ),
 
-            "event": event_col,
+            "event_type":
+                event_display(
+                    row.get(
+                        "event_type",
+                        ""
+                    )
+                ),
 
             "product_id":
-                product_id_col,
+                str(
+                    row.get(
+                        "product_id",
+                        ""
+                    ) or ""
+                ),
 
             "product":
-                product_col,
+                str(
+                    row.get(
+                        "product",
+                        ""
+                    ) or ""
+                ),
 
             "device":
-                device_col,
+                str(
+                    row.get(
+                        "device",
+                        ""
+                    ) or ""
+                ),
 
             "location":
-                location_col,
+                str(
+                    row.get(
+                        "location",
+                        ""
+                    ) or ""
+                ),
 
             "traffic_source":
-                traffic_col,
+                str(
+                    row.get(
+                        "traffic_source",
+                        ""
+                    ) or ""
+                )
+        }
 
-            "timestamp":
-                get_timestamp_column(df),
 
-            "date":
-                get_date_column(df),
+        timestamp = row.get(
+            "timestamp",
+            ""
+        )
 
-            "time":
-                get_time_column(df)
+        if pd.notna(timestamp):
+
+            try:
+
+                event["timestamp"] = (
+                    pd.to_datetime(
+                        timestamp
+                    ).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                )
+
+            except Exception:
+
+                event["timestamp"] = str(
+                    timestamp
+                )
+
+        else:
+
+            event["timestamp"] = ""
+
+
+        recent_events.append(
+            event
+        )
+
+
+    # -----------------------------------------------------
+    # FINAL LIVE RESPONSE
+    # -----------------------------------------------------
+
+    return jsonify({
+
+        "total_events":
+            total_events,
+
+        "unique_users":
+            unique_users,
+
+        "product_views":
+            product_views,
+
+        "add_to_cart":
+            add_to_cart,
+
+        "checkout":
+            checkout,
+
+        "purchases":
+            purchases,
+
+        "funnel":
+            funnel,
+
+        "prediction": {
+
+            "current_user":
+                current_user,
+
+            "current_stage":
+                current_stage,
+
+            "dropoff_probability":
+                round(
+                    probability,
+                    4
+                ),
+
+            "purchase_probability":
+                round(
+                    purchase_probability,
+                    4
+                ),
+
+            "risk_level":
+                risk
         },
 
-        # Overview metrics
-        "total_events": total_events,
+        "dropoff": {
 
-        "unique_users": unique_users,
+            "biggest":
+                biggest_dropoff
+        },
 
-        "product_views": product_views,
+        "recent_events":
+            recent_events,
 
-        "add_to_cart": add_to_cart,
-
-        "checkout": checkout,
-
-        "purchases": purchases,
-
-        # Extra stages
-        "visits": visits,
-
-        "view_cart": view_cart,
-
-        # Drop-off
-        "stopped_after_visit":
-            stopped_after_visit,
-
-        "stopped_after_product_view":
-            stopped_after_product,
-
-        "stopped_after_add_to_cart":
-            stopped_after_cart,
-
-        "checkout_without_purchase":
-            stopped_after_checkout,
-
-        "dropoff_percentages":
-            dropoff_analysis,
-
-        "biggest_dropoff":
-            biggest_dropoff,
-
-        # Traffic
-        "traffic_analysis":
-            traffic_analysis,
-
-        # Device
-        "device_analysis":
-            device_analysis,
-
-        # Location
-        "location_analysis":
-            location_analysis,
-
-        # Product
-        "product_analysis":
-            product_analysis,
-
-        # Time
-        "events_by_date":
-            events_by_date,
-
-        "events_by_hour":
-            events_by_hour,
-
-        "peak_activity_time":
-            peak_activity_time,
-
-        "dropoffs_by_time":
-            dropoffs_by_time,
-
-        "purchases_by_time":
-            purchases_by_time,
-
-        "peak_purchase_time":
-            peak_purchase_time,
-
-        # Actual dataset
-        "rows":
-            detailed_rows
-    }
+        "ml_model_loaded":
+            model is not None
+    })
 
 
 # =========================================================
@@ -2019,16 +1253,10 @@ def analyze_dataset():
 @app.route("/dashboard")
 def dashboard():
 
-    df = load_data()
-
-    total = len(df)
-
     return render_template(
         "dashboard.html",
         site="ShopFlow",
-        page="Overview",
-        total=total,
-        metrics=load_metrics()
+        page="Overview"
     )
 
 
@@ -2045,170 +1273,7 @@ def live():
         page="Live User Journey",
         next_user=next_user_id()
     )
-    # =========================================================
-# DASHBOARD DATA API
-# =========================================================
 
-@app.route("/dashboard-data")
-def dashboard_data():
-
-    df = load_data()
-
-    # Empty dataset protection
-    if df.empty:
-        return jsonify({
-            "total_events": 0,
-            "unique_users": 0,
-            "event_counts": {},
-            "funnel": {},
-            "prediction": {},
-            "dropoff": {
-                "biggest": "—"
-            },
-            "recent_events": [],
-            "ml_model_loaded": model is not None
-        })
-
-    # -----------------------------------------------------
-    # BASIC COUNTS
-    # -----------------------------------------------------
-
-    total_events = len(df)
-
-    unique_users = (
-        df["user_id"].nunique()
-        if "user_id" in df.columns
-        else 0
-    )
-
-    event_counts = (
-        df["event_type"]
-        .value_counts()
-        .to_dict()
-        if "event_type" in df.columns
-        else {}
-    )
-
-    # -----------------------------------------------------
-    # FUNNEL
-    # -----------------------------------------------------
-
-      # -----------------------------------------------------
-    # FUNNEL
-    # -----------------------------------------------------
-
-        # -----------------------------------------------------
-    # FUNNEL
-    # -----------------------------------------------------
-
-    funnel = {
-        "visit": int(event_counts.get("visit", 0)),
-        "signup": int(event_counts.get("signup", 0)),
-        "add_to_cart": int(event_counts.get("add_to_cart", 0)),
-        "checkout": int(event_counts.get("checkout", 0)),
-        "purchase": int(event_counts.get("purchase", 0))
-    }
-
-    funnel_order = [
-        ("visit", "Signup"),
-        ("signup", "Add to Cart"),
-        ("add_to_cart", "Checkout"),
-        ("checkout", "Purchase")
-    ]
-
-    biggest_dropoff = "—"
-    biggest_drop = -1
-
-    for current, next_stage in funnel_order:
-
-        current_count = funnel.get(current, 0)
-
-        if current_count > 0:
-
-            next_key = next_stage.lower().replace(" ", "_")
-            next_count = funnel.get(next_key, 0)
-
-            drop = current_count - next_count
-
-            if drop > biggest_drop:
-                biggest_drop = drop
-                biggest_dropoff = next_stage
-
-    # -----------------------------------------------------
-    # RECENT EVENTS
-    # -----------------------------------------------------
-
-    recent_events = []
-
-    columns = [
-        "user_id",
-        "timestamp",
-        "event_type",
-        "device",
-        "location",
-        "traffic_source",
-        "product_id"
-    ]
-
-    available_columns = [
-        col for col in columns
-        if col in df.columns
-    ]
-
-    recent_df = df.tail(10)
-
-    for _, row in recent_df.iterrows():
-
-        event = {}
-
-        for col in available_columns:
-
-            value = row[col]
-
-            if pd.isna(value):
-                value = ""
-
-            event[col] = str(value)
-
-        recent_events.append(event)
-
-    # -----------------------------------------------------
-    # PREDICTION
-    # -----------------------------------------------------
-
-    prediction = {
-        "purchase_probability": 0,
-        "dropoff_probability": 0,
-        "risk_level": "LOW",
-        "recommendation": "Continue monitoring user behaviour.",
-        "action": "Continue monitoring"
-    }
-
-    # -----------------------------------------------------
-    # RESPONSE
-    # -----------------------------------------------------
-
-    return jsonify({
-
-        "total_events": total_events,
-
-        "unique_users": unique_users,
-
-        "event_counts": event_counts,
-
-        "funnel": funnel,
-
-        "prediction": prediction,
-
-        "dropoff": {
-            "biggest": biggest_dropoff
-        },
-
-        "recent_events": recent_events,
-
-        "ml_model_loaded": False
-
-    })
 
 # =========================================================
 # FUNNEL PAGE
@@ -2267,353 +1332,146 @@ def model_page():
 
 
 # =========================================================
-# HISTORICAL API
-# =========================================================
-
-@app.route("/api/historical")
-def historical():
-
-    analysis = analyze_dataset()
-
-    return jsonify({
-
-        "total":
-            analysis["total_events"],
-
-        "unique_users":
-            analysis["unique_users"],
-
-        "product_views":
-            analysis["product_views"],
-
-        "add_to_cart":
-            analysis["add_to_cart"],
-
-        "checkout":
-            analysis["checkout"],
-
-        "purchases":
-            analysis["purchases"],
-
-        "visits":
-            analysis["visits"],
-
-        "dropoff_rate":
-            analysis[
-                "dropoff_percentages"
-            ].get(
-                "checkout_to_purchase",
-                0
-            ),
-
-        "biggest_dropoff":
-            analysis["biggest_dropoff"]
-    })
-
-
-# =========================================================
-# OVERVIEW DATA API
-# =========================================================
-
-@app.route("/api/overview")
-def api_overview():
-
-    analysis = analyze_dataset()
-
-    return jsonify(analysis)
-
-
-# =========================================================
-# DETAILED DATASET API
-#
-# This is what your dashboard can use for the final
-# "Detailed Dataset Analysis" section.
-# =========================================================
-
-@app.route("/api/ecommerce-dataset-detailed")
-def ecommerce_dataset_detailed():
-
-    analysis = analyze_dataset()
-
-    return jsonify(analysis)
-
-
-# =========================================================
-# DATASET COLUMNS API
-# =========================================================
-
-@app.route("/api/dataset-columns")
-def dataset_columns():
-
-    analysis = analyze_dataset()
-
-    return jsonify({
-
-        "columns":
-            analysis.get(
-                "columns",
-                []
-            ),
-
-        "mapping":
-            analysis.get(
-                "column_mapping",
-                {}
-            )
-    })
-
-
-# =========================================================
-# LIVE EVENTS API
+# LIVE API
 # =========================================================
 
 @app.route("/api/live")
 def api_live():
 
-    try:
-        # Use ONLY the e-commerce dataset
-        df = load_data()
+    df = load_live_events()
 
-        if df.empty:
-            return jsonify({
-                "events": [],
-                "count": 0
-            })
-
-        # Make sure timestamp is usable
-        if "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(
-                df["timestamp"],
-                errors="coerce"
-            )
-
-            df = df.sort_values(
-                ["timestamp"],
-                ascending=False
-            )
-
-        # Latest 20 events from e-commerce dataset
-        recent_df = df.head(20)
-
-        events = []
-
-        for _, row in recent_df.iterrows():
-
-            event = {}
-
-            for col in [
-                "id",
-                "user_id",
-                "event_type",
-                "product_id",
-                "device",
-                "location",
-                "traffic_source",
-                "timestamp"
-            ]:
-                if col in recent_df.columns:
-
-                    value = row[col]
-
-                    if pd.isna(value):
-                        value = ""
-
-                    event[col] = str(value)
-
-            events.append(event)
-
-        return jsonify({
-            "events": events,
-            "count": len(events)
-        })
-
-    except Exception as e:
-
-        print("Live event loading error:", e)
+    if df.empty:
 
         return jsonify({
             "events": [],
-            "count": 0,
-            "error": str(e)
+            "count": 0
         })
 
-    # -----------------------------------------------------
-    # Latest state for every user
-    # -----------------------------------------------------
 
-    for user_id, user_events in (
-        all_events.groupby(
-            "user_id",
-            sort=False
-        )
-    ):
+    if "timestamp" in df.columns:
 
-        user_events = user_events.sort_values(
-            ["timestamp", "id"],
-            ascending=[False, False]
+        df["timestamp"] = pd.to_datetime(
+            df["timestamp"],
+            errors="coerce"
         )
 
-        latest = user_events.iloc[
-            0
-        ].copy()
-
-        # Purchase history
-        purchase_events = user_events[
-            user_events[
-                "current_page"
-            ]
-            .astype(str)
-            .apply(normalize_event)
-            .eq("purchase")
-        ]
-
-        purchase_count = len(
-            purchase_events
+        df = df.sort_values(
+            ["timestamp", "id"]
+            if "id" in df.columns
+            else ["timestamp"],
+            ascending=False
         )
 
-        has_purchased = (
-            purchase_count > 0
-        )
 
-        latest_purchase_time = ""
+    recent_df = df.head(50)
 
-        if has_purchased:
+    events = []
 
-            purchase_time = (
-                purchase_events.iloc[
-                    0
-                ]["timestamp"]
-            )
 
-            if pd.notna(
-                purchase_time
-            ):
+    for _, row in recent_df.iterrows():
 
-                latest_purchase_time = (
-                    purchase_time.strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                )
-
-        # Product from current event
-        product = str(
-            latest.get(
-                "product",
-                ""
-            )
-            or ""
-        )
-
-        product_id = str(
-            latest.get(
-                "product_id",
-                ""
-            )
-            or ""
-        )
-
-        # Format record
-        record = latest.to_dict()
-
-        record[
-            "user_id"
-        ] = (
-            f"U{int(user_id)}"
-            if str(user_id).isdigit()
-            else str(user_id)
-        )
-
-        record[
-            "event"
-        ] = event_display(
-            latest.get(
-                "event_type",
-                latest.get(
-                    "current_page",
-                    ""
-                )
-            )
-        )
-
-        record[
-            "product_id"
-        ] = product_id
-
-        record[
-            "product"
-        ] = product
-
-        record[
-            "has_purchased"
-        ] = has_purchased
-
-        record[
-            "purchase_count"
-        ] = purchase_count
-
-        record[
-            "last_purchase_time"
-        ] = latest_purchase_time
-
-        timestamp = latest.get(
-            "timestamp"
+        timestamp = row.get(
+            "timestamp",
+            ""
         )
 
         if pd.notna(timestamp):
 
-            record[
-                "timestamp"
-            ] = timestamp.strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-        else:
-
-            record[
-                "timestamp"
-            ] = ""
-
-        for key, value in list(
-            record.items()
-        ):
-
             try:
 
-                if pd.isna(value):
-
-                    record[key] = ""
-
-                elif hasattr(
-                    value,
-                    "item"
-                ):
-
-                    record[key] = (
-                        value.item()
-                    )
+                timestamp = pd.to_datetime(
+                    timestamp
+                ).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
 
             except Exception:
 
-                record[key] = str(value)
+                timestamp = str(timestamp)
 
-        records.append(record)
+        else:
 
-    records.sort(
-        key=lambda x:
-            str(
-                x.get(
-                    "timestamp",
-                    ""
-                )
-            ),
-        reverse=True
-    )
+            timestamp = ""
 
-    records = records[:50]
+
+        events.append({
+
+            "id":
+                str(
+                    row.get(
+                        "id",
+                        ""
+                    )
+                ),
+
+            "user_id":
+                str(
+                    row.get(
+                        "user_id",
+                        ""
+                    )
+                ),
+
+            "event_type":
+                event_display(
+                    row.get(
+                        "event_type",
+                        ""
+                    )
+                ),
+
+            "product_id":
+                str(
+                    row.get(
+                        "product_id",
+                        ""
+                    ) or ""
+                ),
+
+            "product":
+                str(
+                    row.get(
+                        "product",
+                        ""
+                    ) or ""
+                ),
+
+            "device":
+                str(
+                    row.get(
+                        "device",
+                        ""
+                    ) or ""
+                ),
+
+            "location":
+                str(
+                    row.get(
+                        "location",
+                        ""
+                    ) or ""
+                ),
+
+            "traffic_source":
+                str(
+                    row.get(
+                        "traffic_source",
+                        ""
+                    ) or ""
+                ),
+
+            "timestamp":
+                timestamp
+        })
+
 
     return jsonify({
-        "events": records,
-        "count": len(records)
+
+        "events":
+            events,
+
+        "count":
+            len(events)
     })
 
 
@@ -2625,6 +1483,7 @@ def api_live():
 def api_next_user():
 
     return jsonify({
+
         "user_id":
             next_user_id()
     })
@@ -2644,50 +1503,98 @@ def api_predict():
         force=True
     ) or {}
 
-    probability, risk = (
-        calculate_prediction(
 
-            int(
-                data.get(
-                    "age",
-                    25
-                )
-            ),
+    try:
 
-            int(
-                data.get(
-                    "pages_visited",
-                    1
-                )
-            ),
-
-            int(
-                data.get(
-                    "session_duration",
-                    0
-                )
-            ),
-
-            int(
-                data.get(
-                    "clicks",
-                    0
-                )
-            ),
-
-            int(
-                data.get(
-                    "previous_visits",
-                    0
-                )
-            ),
-
+        age = int(
             data.get(
-                "current_page",
-                "Home"
+                "age",
+                25
             )
         )
+
+    except Exception:
+
+        age = 25
+
+
+    try:
+
+        pages = int(
+            data.get(
+                "pages_visited",
+                1
+            )
+        )
+
+    except Exception:
+
+        pages = 1
+
+
+    try:
+
+        duration = int(
+            data.get(
+                "session_duration",
+                0
+            )
+        )
+
+    except Exception:
+
+        duration = 0
+
+
+    try:
+
+        clicks = int(
+            data.get(
+                "clicks",
+                0
+            )
+        )
+
+    except Exception:
+
+        clicks = 0
+
+
+    try:
+
+        previous_visits = int(
+            data.get(
+                "previous_visits",
+                0
+            )
+        )
+
+    except Exception:
+
+        previous_visits = 0
+
+
+    current_page = data.get(
+        "current_page",
+        "Visit"
     )
+
+
+    probability, risk = calculate_prediction(
+
+        age,
+
+        pages,
+
+        duration,
+
+        clicks,
+
+        previous_visits,
+
+        current_page
+    )
+
 
     return jsonify({
 
@@ -2711,7 +1618,7 @@ def api_predict():
 
 
 # =========================================================
-# LIVE ECOMMERCE EVENT API
+# SHOPPING WEBSITE → LIVE EVENT API
 # =========================================================
 
 @app.route(
@@ -2724,6 +1631,7 @@ def api_event():
         force=True
     ) or {}
 
+
     # -----------------------------------------------------
     # USER
     # -----------------------------------------------------
@@ -2735,8 +1643,9 @@ def api_event():
         )
     )
 
+
     # -----------------------------------------------------
-    # PAGE / EVENT
+    # EVENT
     # -----------------------------------------------------
 
     current_page = str(
@@ -2749,6 +1658,7 @@ def api_event():
         )
     )
 
+
     # -----------------------------------------------------
     # DEVICE
     # -----------------------------------------------------
@@ -2760,8 +1670,9 @@ def api_event():
         )
     )
 
+
     # -----------------------------------------------------
-    # USER DATA
+    # USER FEATURES
     # -----------------------------------------------------
 
     try:
@@ -2774,6 +1685,7 @@ def api_event():
     except Exception:
         age = 25
 
+
     try:
         pages_visited = int(
             data.get(
@@ -2783,6 +1695,7 @@ def api_event():
         )
     except Exception:
         pages_visited = 1
+
 
     try:
         session_duration = int(
@@ -2794,6 +1707,7 @@ def api_event():
     except Exception:
         session_duration = 0
 
+
     try:
         clicks = int(
             data.get(
@@ -2803,6 +1717,7 @@ def api_event():
         )
     except Exception:
         clicks = 0
+
 
     try:
         previous_visits = int(
@@ -2814,26 +1729,26 @@ def api_event():
     except Exception:
         previous_visits = 0
 
+
     # -----------------------------------------------------
-    # ML
+    # LIVE ML PREDICTION
     # -----------------------------------------------------
 
-    probability, risk = (
-        calculate_prediction(
+    probability, risk = calculate_prediction(
 
-            age,
+        age,
 
-            pages_visited,
+        pages_visited,
 
-            session_duration,
+        session_duration,
 
-            clicks,
+        clicks,
 
-            previous_visits,
+        previous_visits,
 
-            current_page
-        )
+        current_page
     )
+
 
     # -----------------------------------------------------
     # USER OBJECT
@@ -2877,33 +1792,24 @@ def api_event():
             risk
     }
 
+
     # -----------------------------------------------------
-    # SAVE
+    # SAVE ONLY TO LIVE DATABASE
     # -----------------------------------------------------
 
-    live_saved = save_live_event(
+    saved = save_live_event(
         user,
         data
     )
 
-    funnel_saved = save_event_to_funnel(
-        data,
-        user
-    )
-
-    # -----------------------------------------------------
-    # RESPONSE
-    # -----------------------------------------------------
 
     return jsonify({
 
-        "ok": True,
+        "ok":
+            saved,
 
         "live_saved":
-            live_saved,
-
-        "funnel_saved":
-            funnel_saved,
+            saved,
 
         "user":
             user,
@@ -2914,6 +1820,122 @@ def api_event():
                 2
             )
     })
+
+
+# =========================================================
+# OPTIONAL DATASET API
+# =========================================================
+#
+# These are NOT used by Overview.
+#
+# The Overview does NOT call ecommerce_events.csv.
+#
+# They are kept only so existing pages/API calls don't break.
+# =========================================================
+
+@app.route("/api/historical")
+def historical():
+
+    return jsonify({
+
+        "message":
+            "Historical dataset is not used by the live Overview.",
+
+        "available":
+            DATA_FILE.exists()
+    })
+
+
+@app.route("/api/overview")
+def api_overview():
+
+    # IMPORTANT:
+    # Overview is LIVE ONLY.
+
+    return dashboard_data()
+
+
+@app.route("/api/ecommerce-dataset-detailed")
+def ecommerce_dataset_detailed():
+
+    if not DATA_FILE.exists():
+
+        return jsonify({
+
+            "available":
+                False,
+
+            "message":
+                "Dataset not available."
+        })
+
+
+    try:
+
+        df = pd.read_csv(
+            DATA_FILE
+        )
+
+        return jsonify({
+
+            "available":
+                True,
+
+            "total_events":
+                len(df),
+
+            "columns":
+                [
+                    str(c)
+                    for c in df.columns
+                ]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+
+            "available":
+                False,
+
+            "error":
+                str(e)
+        })
+
+
+@app.route("/api/dataset-columns")
+def dataset_columns():
+
+    if not DATA_FILE.exists():
+
+        return jsonify({
+
+            "columns": []
+        })
+
+
+    try:
+
+        df = pd.read_csv(
+            DATA_FILE,
+            nrows=1
+        )
+
+        return jsonify({
+
+            "columns":
+                [
+                    str(c)
+                    for c in df.columns
+                ]
+        })
+
+    except Exception:
+
+        return jsonify({
+
+            "columns": []
+        })
 
 
 # =========================================================
@@ -2929,9 +1951,7 @@ def health():
 
     try:
 
-        connection = (
-            get_mysql_connection()
-        )
+        connection = get_mysql_connection()
 
         mysql_status = (
             connection.is_connected()
@@ -2953,19 +1973,22 @@ def health():
             except Exception:
                 pass
 
+
     return jsonify({
 
-    "status":
-        "ok",
+        "status":
+            "ok",
 
-    "mysql":
-        mysql_status,
+        "mysql":
+            mysql_status,
 
-    "csv": DATA_FILE.exists(),
+        "csv":
+            DATA_FILE.exists(),
 
-    "model":
-        model is not None
-})
+        "model":
+            model is not None
+    })
+
 
 # =========================================================
 # STARTUP
@@ -2992,8 +2015,11 @@ def startup():
     )
 
     print(
-        "CSV:",
-        DATA_FILE
+        "LIVE MODE: MySQL live_events ONLY"
+    )
+
+    print(
+        "Historical CSV is NOT used by Overview."
     )
 
     print(
@@ -3011,6 +2037,7 @@ def startup():
 # =========================================================
 # RUN
 # =========================================================
+
 if __name__ == "__main__":
 
     startup()
