@@ -1,5 +1,7 @@
+
 // ============================================================
 // SHOPFLOW USER JOURNEY TRACKER
+// REAL-TIME E-COMMERCE EVENT TRACKING
 // ============================================================
 
 
@@ -11,54 +13,42 @@ function getDeviceType() {
 
     const userAgent = navigator.userAgent.toLowerCase();
 
-    // Mobile phones
     if (
         /android.*mobile|iphone|ipod|windows phone/.test(userAgent)
     ) {
         return "mobile";
     }
 
-    // Tablets
     if (
         /ipad|android(?!.*mobile)|tablet/.test(userAgent)
     ) {
         return "tablet";
     }
 
-    // Desktop / Laptop
     return "desktop";
 }
 
 
 // ============================================================
-// TRAFFIC SOURCE DETECTION
+// TRAFFIC SOURCE
 // ============================================================
 
 function getTrafficSource() {
 
     const referrer = document.referrer.toLowerCase();
 
-    // No referrer = direct visit
     if (!referrer) {
         return "direct";
     }
 
-    // Google
-    if (referrer.includes("google.")) {
+    if (
+        referrer.includes("google.") ||
+        referrer.includes("bing.") ||
+        referrer.includes("yahoo.")
+    ) {
         return "organic_search";
     }
 
-    // Bing
-    if (referrer.includes("bing.")) {
-        return "organic_search";
-    }
-
-    // Yahoo
-    if (referrer.includes("yahoo.")) {
-        return "organic_search";
-    }
-
-    // Social media
     if (
         referrer.includes("facebook.") ||
         referrer.includes("instagram.") ||
@@ -70,7 +60,6 @@ function getTrafficSource() {
         return "social";
     }
 
-    // Referral from another website
     return "referral";
 }
 
@@ -81,9 +70,7 @@ function getTrafficSource() {
 
 function getShopFlowUserId() {
 
-    let userId = localStorage.getItem(
-        "shopflow_user_id"
-    );
+    let userId = localStorage.getItem("shopflow_user_id");
 
     if (!userId) {
 
@@ -108,16 +95,11 @@ function getShopFlowUserId() {
 // TRACK EVENT
 // ============================================================
 
-function trackEvent(
-    eventType,
-    productId = null
-) {
-
-    const userId = getShopFlowUserId();
+function trackEvent(eventType, productId = null) {
 
     const eventData = {
 
-        user_id: userId,
+        user_id: getShopFlowUserId(),
 
         event_type: eventType,
 
@@ -127,13 +109,14 @@ function trackEvent(
 
         location: "India",
 
-        traffic_source: getTrafficSource()
+        traffic_source: getTrafficSource(),
 
+        timestamp: new Date().toISOString()
     };
 
 
     console.log(
-        "SHOPFLOW EVENT:",
+        "SHOPFLOW LIVE EVENT:",
         eventData
     );
 
@@ -168,7 +151,7 @@ function trackEvent(
     .then(data => {
 
         console.log(
-            "EVENT SAVED:",
+            "SHOPFLOW EVENT SAVED:",
             data
         );
 
@@ -177,13 +160,19 @@ function trackEvent(
     .catch(error => {
 
         console.error(
-            "TRACKING ERROR:",
+            "SHOPFLOW LIVE TRACKING ERROR:",
             error
         );
 
     });
-
 }
+
+
+// ============================================================
+// MAKE TRACK EVENT AVAILABLE TO ALL SHOPPING PAGES
+// ============================================================
+
+window.trackEvent = trackEvent;
 
 
 // ============================================================
