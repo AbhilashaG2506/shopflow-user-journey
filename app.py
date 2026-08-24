@@ -251,7 +251,7 @@ def event_display(value):
 
 def load_data():
 
-    if not DATA_FILE.exists():
+    if not os.path.exists(DATA_FILE):
         print("CSV file not found:", DATA_FILE)
         return pd.DataFrame()
 
