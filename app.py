@@ -2016,6 +2016,7 @@ def analyze_dataset():
 # =========================================================
 
 @app.route("/")
+@app.route("/dashboard")
 def dashboard():
 
     df = load_data()
@@ -2756,7 +2757,7 @@ def health():
             mysql_status,
 
         "csv":
-            DATA_FILE.exists(),
+            DATA_FILE = BASE_DIR / "data" / "ecommerce_events.csv"
 
         "model":
             model is not None
